@@ -52,7 +52,7 @@ C4J(1)                  C 4  H 9            G100.000   5000.000  1048.11       1
 ! other(R) + group(Cs-CsCsHH) + gauche(Cs(Cs(CsRR)Cs(CsRR)RR)) + other(R) + group(Cs-CsCsHH) + gauche(Cs(Cs(CsRR)Cs(CsRR)RR)) + other(R) + group(Cs-
 ! CsCsHH) + gauche(Cs(Cs(CsRR)Cs(CsRR)RR)) + other(R) + group(Cs-CsCsHH) + gauche(Cs(Cs(CsRR)CsRR)) + other(R) + group(Cs-CsCsHH) +
 ! gauche(Cs(Cs(CsRR)CsRR)) + other(R) + group(Cs-(Cds-Cds)CsHH) + gauche(Cs(Cs(CsRR)RRR)) + other(R) + group(Cs-CsHHH) + gauche(Cs(Cs(CsRR)RRR)) +
-! other(R) + group(Cds-CdsCsH) + gauche(CsOsCdSs) + other(R) + group(Cds-CdsHH) + gauche(CsOsCdSs) + other(R)
+! other(R) + group(Cds-CdsCsH) + gauche(CsOsCdS2s) + other(R) + group(Cds-CdsHH) + gauche(CsOsCdS2s) + other(R)
 C11H22(2)               C 11 H 22           G100.000   5000.000  1687.46       1
  2.40183437E+01 6.63233942E-02-2.68542330E-05 4.78759141E-09-3.18671908E-13    2
 -3.06597483E+04-9.23478682E+01-2.31376357E+00 1.28742717E-01-8.23402763E-05    3
@@ -69,7 +69,7 @@ CCCC(5)                 C 4  H 10           G100.000   5000.000  1025.38       1
 ! other(R) + group(Cs-CsCsHH) + gauche(Cs(Cs(CsRR)Cs(CsRR)RR)) + other(R) + group(Cs-CsCsHH) + gauche(Cs(Cs(CsRR)Cs(CsRR)RR)) + other(R) + group(Cs-
 ! CsCsHH) + gauche(Cs(Cs(CsRR)Cs(CsRR)RR)) + other(R) + group(Cs-CsCsHH) + gauche(Cs(Cs(CsRR)CsRR)) + other(R) + group(Cs-CsCsHH) +
 ! gauche(Cs(Cs(CsRR)CsRR)) + other(R) + group(Cs-(Cds-Cds)CsHH) + gauche(Cs(Cs(CsRR)RRR)) + other(R) + group(Cs-CsHHH) + gauche(Cs(Cs(CsRR)RRR)) +
-! other(R) + group(Cds-CdsCsH) + gauche(CsOsCdSs) + other(R) + group(Cds-CdsHH) + gauche(CsOsCdSs) + other(R) + radical(RCCJCC)
+! other(R) + group(Cds-CdsCsH) + gauche(CsOsCdS2s) + other(R) + group(Cds-CdsHH) + gauche(CsOsCdS2s) + other(R) + radical(RCCJCC)
 C11H21(6)               C 11 H 21           G100.000   5000.000  1517.06       1
  1.41237789E+01 7.88982983E-02-3.39282828E-05 6.26591707E-09-4.27728998E-13    2
 -3.07728703E+03-3.32559805E+01-1.15790060E+00 1.19190852E-01-7.37674054E-05    3
@@ -79,7 +79,7 @@ C11H21(6)               C 11 H 21           G100.000   5000.000  1517.06       1
 ! other(R) + group(Cs-CsCsHH) + gauche(Cs(Cs(CsRR)Cs(CsRR)RR)) + other(R) + group(Cs-CsCsHH) + gauche(Cs(Cs(CsRR)Cs(CsRR)RR)) + other(R) + group(Cs-
 ! CsCsHH) + gauche(Cs(Cs(CsRR)Cs(CsRR)RR)) + other(R) + group(Cs-CsCsHH) + gauche(Cs(Cs(CsRR)CsRR)) + other(R) + group(Cs-CsCsHH) +
 ! gauche(Cs(Cs(CsRR)CsRR)) + other(R) + group(Cs-(Cds-Cds)CsHH) + gauche(Cs(Cs(CsRR)RRR)) + other(R) + group(Cs-CsHHH) + gauche(Cs(Cs(CsRR)RRR)) +
-! other(R) + group(Cds-CdsCsH) + gauche(CsOsCdSs) + other(R) + group(Cds-CdsHH) + gauche(CsOsCdSs) + other(R) + radical(RCCJCC)
+! other(R) + group(Cds-CdsCsH) + gauche(CsOsCdS2s) + other(R) + group(Cds-CdsHH) + gauche(CsOsCdS2s) + other(R) + radical(RCCJCC)
 C11H21(7)               C 11 H 21           G100.000   5000.000  1517.06       1
  1.41237789E+01 7.88982983E-02-3.39282828E-05 6.26591707E-09-4.27728998E-13    2
 -3.07728703E+03-3.32559805E+01-1.15790060E+00 1.19190852E-01-7.37674054E-05    3
