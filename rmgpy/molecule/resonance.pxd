@@ -9,6 +9,8 @@ cpdef list generateAdjacentResonanceIsomers(Molecule mol)
 
 cpdef list generateLonePairRadicalResonanceIsomers(Molecule mol)
 
+cpdef list generateLonePairMultipleBondResonanceStructures(Molecule mol)
+
 cpdef list generateN5dd_N5tsResonanceIsomers(Molecule mol)
 
 cpdef list generate_isomorphic_isomers(Molecule mol)
