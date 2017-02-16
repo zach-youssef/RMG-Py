@@ -176,9 +176,12 @@ def generateResonanceStructures(mol, keepIsomorphic=False):
                 # Remove non-aromatic structures under the assumption that they aren't important resonance contributors
                 newMolList = [m for m in newMolList if m.isAromatic()]
             else:
-                _generateResonanceStructures(newMolList, [generateKekuleStructure,
-                                                          generateOppositeKekuleStructure]), keepIsomorphic
+                i = len(newMolList)
+                _generateResonanceStructures(newMolList, [generateKekuleStructure]), keepIsomorphic
+                j = len(newMolList)
                 _generateResonanceStructures(newMolList, [generateAdjacentResonanceStructures], keepIsomorphic)
+                # Remove the kekule structures that do not have the radical delocalized into the ring
+                del newMolList[i:j]
         elif features['isPolycyclicAromatic']:
             _generateResonanceStructures(newMolList, [generateClarStructures], keepIsomorphic)
         else:
