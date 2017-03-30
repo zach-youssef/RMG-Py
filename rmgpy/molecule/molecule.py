@@ -1691,7 +1691,7 @@ class Molecule(Graph):
         cython.declare(ring0=list, i=cython.int, atom1=Atom, atom2=Atom)
 
         if rings is None:
-            rings = self.getAllCyclesOfSize(6)
+            rings = self.getAllSimpleCyclesOfSize(6)
         if not rings:
             return [], []
 
