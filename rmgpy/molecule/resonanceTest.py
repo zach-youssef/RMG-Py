@@ -731,6 +731,42 @@ multiplicity 2
 
         self.assertEqual(dBonds, 12)
 
+    def testKekulizeBridgedAromatic(self):
+        """Test that we can kekulize a bridged polycyclic aromatic species."""
+        arom = Molecule().fromAdjacencyList("""
+1  C u0 p0 c0 {2,B} {3,S} {6,B}
+2  C u0 p0 c0 {1,B} {3,B} {11,S}
+3  C u0 p0 c0 {1,S} {2,B} {4,B}
+4  C u0 p0 c0 {3,B} {5,B} {12,S}
+5  C u0 p0 c0 {4,B} {6,B} {10,B}
+6  C u0 p0 c0 {1,B} {5,B} {7,B}
+7  C u0 p0 c0 {6,B} {8,B} {13,S}
+8  C u0 p0 c0 {7,B} {9,B} {14,S}
+9  C u0 p0 c0 {8,B} {10,B} {15,S}
+10 C u0 p0 c0 {5,B} {9,B} {16,S}
+11 H u0 p0 c0 {2,S}
+12 H u0 p0 c0 {4,S}
+13 H u0 p0 c0 {7,S}
+14 H u0 p0 c0 {8,S}
+15 H u0 p0 c0 {9,S}
+16 H u0 p0 c0 {10,S}
+""")
+        out = generateKekuleStructure(arom)
+
+        self.assertEqual(len(out), 1)
+        self.assertFalse(out[0].isAromatic())
+
+        bonds = set()
+        for atom in out[0].atoms:
+            for bond in atom.bonds.itervalues():
+                bonds.add(bond)
+        dBonds = 0
+        for bond in bonds:
+            if bond.isDouble():
+                dBonds += 1
+
+        self.assertEqual(dBonds, 5)
+
     def testKekulizeResonanceIsomer(self):
         """
         Tests that an aromatic molecule returns at least one Kekulized resonance isomer.
