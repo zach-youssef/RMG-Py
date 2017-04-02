@@ -1690,6 +1690,9 @@ class Molecule(Graph):
         cython.declare(rdAtomIndices=dict, obAtomIds=dict, aromaticRings=list, aromaticBonds=list)
         cython.declare(ring0=list, i=cython.int, atom1=Atom, atom2=Atom)
 
+        from rdkit.Chem.rdchem import BondType
+        AROMATIC = BondType.AROMATIC
+
         if rings is None:
             rings = self.getAllSimpleCyclesOfSize(6)
         if not rings:
@@ -1712,7 +1715,7 @@ class Molecule(Graph):
                     for atom2 in ring0[i + 1:]:
                         if self.hasBond(atom1, atom2):
                             if rdkitmol.GetBondBetweenAtoms(rdAtomIndices[atom1],
-                                                            rdAtomIndices[atom2]).GetIsAromatic():
+                                                            rdAtomIndices[atom2]).GetBondType() is AROMATIC:
                                 aromaticBondsInRing.append(self.getBond(atom1, atom2))
                 else:  # didn't break so all atoms are carbon
                     if len(aromaticBondsInRing) == 6:
