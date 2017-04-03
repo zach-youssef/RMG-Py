@@ -113,7 +113,7 @@ cdef list prioritizeBonds(list aromaticList):
     cdef AromaticBond item, x
     for item in aromaticList:
         item.update()
-    return aromaticList.sort(key=lambda x: (x.endoDOF, x.exoDOF), reverse=True)
+    return aromaticList.sort(key=lambda x: (x.doublePossible, not x.doubleRequired, x.endoDOF, x.exoDOF), reverse=True)
 
 cdef class AromaticRing:
     """Helper class containing information about a single aromatic ring in a molecule."""
@@ -212,7 +212,7 @@ cdef class AromaticRing:
                 #   - This is the last undefined endo bond
                 if ((self.endoDOF == 6 and self.exoDOF == 0)
                         or (self.endoDOF == 6 and bond.exoDOF == 0)
-                        or (bond.endoDOF == 1 and bond.exoDOF == 2)
+                        or (bond.endoDOF == 1 and (bond.exoDOF == 1 or bond.exoDOF == 2))
                         or self.endoDOF == 1):
                     # Go ahead an assume this bond is double
                     bond.bond.order = 2
