@@ -587,7 +587,10 @@ class RMG(util.Subject):
             else: #if they only provide one input for simulator use that everytime
                 simulatorSettings = self.simulatorSettingsList[0]
 
-                
+            logging.info('Beginning model generation stage {0}'.format(q+1))
+            
+            self.done = False
+
             # Main RMG loop
             while not self.done:
 
@@ -723,6 +726,7 @@ class RMG(util.Subject):
                         return
                     
             if maxNumSpcsHit: #resets maxNumSpcsHit and continues the settings for loop
+                logging.info('The maximum number of species ({0}) has been hit, Exiting stage {1} ...'.format(modelSettings.maxNumSpecies,q+1))
                 maxNumSpcsHit = False
                 continue
         
