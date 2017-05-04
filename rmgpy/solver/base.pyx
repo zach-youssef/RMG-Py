@@ -255,6 +255,8 @@ cdef class ReactionSystem(DASx):
         
         for i in range(len(surfaceSpecies)):
             surfaceSpeciesIndices.append(coreSpecies.index(surfaceSpecies[i]))
+
+                
         for i in range(len(surfaceReactions)):
             surfaceReactionIndices.append(coreReactions.index(surfaceReactions[i]))
         
@@ -287,7 +289,7 @@ cdef class ReactionSystem(DASx):
         surfaceReactions = [coreReactions[i] for i in surfaceReactionIndices]
         
         logging.info('surface initialization complete')
-
+        
         return surfaceSpecies,surfaceReactions
         
     def initiate_tolerances(self, atol=1e-16, rtol=1e-8, sensitivity=False, sens_atol=1e-6, sens_rtol=1e-4):
@@ -456,6 +458,34 @@ cdef class ReactionSystem(DASx):
         
         return
     
+    cpdef addReactionsToSurface(self,list newSurfaceReactions,list newSurfaceReactionInds,list surfaceSpecies,list surfaceReactions,list edgeSpecies):
+        """
+        moves new surface reactions to the core
+        done after the while loop before the simulate call ends
+        """
+        cdef object srxn
+        cdef int k,sind,numCoreSpecies,i,numCoreReactions
+        cdef numpy.ndarray[numpy.int_t, ndim=2] productIndices, reactantIndices
+        
+        productIndices = self.productIndices
+        reactantIndices = self.reactantIndices
+        numCoreSpecies = self.numCoreSpecies
+        numCoreReactions = self.numCoreReactions
+        
+        for k in xrange(len(newSurfaceReactions)):
+            srxn = newSurfaceReactions[k]
+            sind = newSurfaceReactionInds[k]
+            surfaceReactions.append(srxn) #add to surface trackers
+                        
+            for i in productIndices[sind+numCoreReactions]:
+                if i >= numCoreSpecies:
+                    surfaceSpecies.append(edgeSpecies[i-numCoreSpecies])
+            for i in reactantIndices[sind+numCoreReactions]:
+                if i >= numCoreSpecies:
+                    surfaceSpecies.append(edgeSpecies[i-numCoreSpecies])
+                    
+        return surfaceSpecies,surfaceReactions
+
     @cython.boundscheck(False)
     cpdef simulate(self, list coreSpecies, list coreReactions, list edgeSpecies, list edgeReactions,list surfaceSpecies, list surfaceReactions,
         double toleranceKeepInEdge, double toleranceMoveToCore, double toleranceInterruptSimulation,
@@ -503,7 +533,7 @@ cdef class ReactionSystem(DASx):
         # cython declations for sensitivity analysis
         cdef numpy.ndarray[numpy.int_t, ndim=1] sensSpeciesIndices
         cdef numpy.ndarray[numpy.float64_t, ndim=1] moleSens, dVdk, normSens
-        cdef list time_array, normSens_array 
+        cdef list time_array, normSens_array, newSurfaceReactions, newSurfaceReactionInds
         
         zeroProduction = False
         zeroConsumption = False
@@ -513,7 +543,6 @@ cdef class ReactionSystem(DASx):
         numEdgeSpecies = len(edgeSpecies)
         numPdepNetworks = len(pdepNetworks)
         numCoreReactions = len(coreReactions)
-        
         
         
         speciesIndex = {}
@@ -528,7 +557,9 @@ cdef class ReactionSystem(DASx):
         surfaceReactionIndices = self.surfaceReactionIndices
         
        
+
         invalidObject = None
+
         terminated = False
         maxSpeciesIndex = -1
         maxSpecies = None
@@ -637,7 +668,6 @@ cdef class ReactionSystem(DASx):
                 if maxNetworkLeakRateRatios[index] < networkLeakRateRatios[index]:
                     maxNetworkLeakRateRatios[index] = networkLeakRateRatios[index]
             
-            
             if charRate == 0 and len(edgeSpeciesRates)>0:
                 maxSpeciesIndex = numpy.argmax(edgeSpeciesRates)
                 maxSpecies = edgeSpecies[maxSpeciesIndex]
@@ -659,7 +689,7 @@ cdef class ReactionSystem(DASx):
                         if consumption != 0:
                             totalDivAccumNums[index] *= (reactionRate+consumption)/consumption
                         elif coreSpeciesConcentrations[spcIndex] == 0: 
-                            totalDivAccumNums[index] *= 1.0 #if the species concentration is zero ignore
+                            pass  #if the species concentration is zero ignore
                         else:
                             zeroConsumption = True #otherwise include edge reaction with most flux
                             infAccumNumIndex = spcIndex
@@ -670,7 +700,7 @@ cdef class ReactionSystem(DASx):
                         if production != 0:
                             totalDivAccumNums[index] *= (reactionRate+production)/production
                         elif coreSpeciesConcentrations[spcIndex] == 0: 
-                            totalDivAccumNums[index] *= 1.0 #if the species concentration is zero ignore
+                            pass #if the species concentration is zero ignore
                         else:
                             zeroProduction = True #otherwise include edge reaction with most flux
                             infAccumNumIndex = spcIndex
@@ -717,7 +747,7 @@ cdef class ReactionSystem(DASx):
             else: 
                 maxLayeringReaction = None
                 maxLayeringDifLnAccumNum = 0
-                
+            
             # Get the edge species with the highest flux
             if numEdgeSpecies > 0:
                 maxSpeciesIndex = numpy.argmax(edgeSpeciesRates)
@@ -733,35 +763,44 @@ cdef class ReactionSystem(DASx):
                 maxNetworkRate = networkLeakRates[maxNetworkIndex]
                 
             #calculate criteria for surface species
-            surfaceTotalDivAccumNums = numpy.zeros(len(surfaceReactionIndices))
+            surfaceTotalDivAccumNums = numpy.ones(len(surfaceReactionIndices))
             
             for i in xrange(len(surfaceReactionIndices)):
                 index = surfaceReactionIndices[i]
                 reactionRate = coreReactionRates[index]
                 for spcIndex in reactantIndices[index,:]:
-                    if spcIndex != -1 and spcIndex<numCoreSpecies:
+                    if spcIndex != -1 and spcIndex<numCoreSpecies and not(spcIndex in surfaceSpeciesIndices):
                         consumption = coreSpeciesConsumptionRates[spcIndex]
                         if consumption != 0:
-                            surfaceTotalDivAccumNums[i] *= (reactionRate+consumption)/consumption
+                            if abs(abs(consumption) - abs(reactionRate)) < absoluteTolerance:
+                                surfaceTotalDivAccumNums[i] = numpy.inf
+                            elif reactionRate > 0:
+                                surfaceTotalDivAccumNums[i] *= consumption/(consumption-reactionRate)
+                            else:
+                                surfaceTotalDivAccumNums[i] *= (consumption-reactionRate)/consumption
                         elif coreSpeciesConcentrations[spcIndex] == 0: 
-                            surfaceTotalDivAccumNums[i] *= 1.0 #if the species concentration is zero ignore
+                            pass #if the species concentration is zero ignore
                         else:
                             zeroConsumption = True #otherwise include edge reaction with most flux
                             surfaceInfAccumNumIndex = spcIndex
                             break
                 for spcIndex in productIndices[index,:]:
-                    if spcIndex != -1 and spcIndex<numCoreSpecies:
+                    if spcIndex != -1 and spcIndex<numCoreSpecies and not(spcIndex in surfaceSpeciesIndices):
                         production = coreSpeciesProductionRates[spcIndex]
                         if production != 0:
-                            surfaceTotalDivAccumNums[i] *= (reactionRate+production)/production
+                            if abs(abs(production) - abs(reactionRate)) < absoluteTolerance:
+                                surfaceTotalDivAccumNums[i] = numpy.inf
+                            elif reactionRate > 0:
+                                surfaceTotalDivAccumNums[i] *= production/(production-reactionRate)
+                            else:
+                                surfaceTotalDivAccumNums[i] *= (production-reactionRate)/production
                         elif coreSpeciesConcentrations[spcIndex] == 0: 
-                            surfaceTotalDivAccumNums[i] *= 1.0 #if the species concentration is zero ignore
+                            pass #if the species concentration is zero ignore
                         else:
                             zeroProduction = True #otherwise include edge reaction with most flux
                             infAccumNumIndex = spcIndex
                             break
 
-                
             #Get surface reaction with greatest total difference in Ln(accumulation number)
             
             if len(surfaceTotalDivAccumNums) > 0:
@@ -828,7 +867,7 @@ cdef class ReactionSystem(DASx):
                         if not bimolecularThreshold[i,j]:
                             if coreSpeciesConcentrations[i]*coreSpeciesConcentrations[j] > bimolecularThresholdVal:
                                 bimolecularThreshold[i,j] = True
-
+                                                    
             #manage surface movement "on the fly"
             if maxSurfaceSpecies and maxSurfaceSpeciesRate/charRate > toleranceMoveSurfaceSpeciesToCore:
                 logging.info('Moving species {0} from surface to core'.format(maxSurfaceSpecies))
@@ -837,6 +876,7 @@ cdef class ReactionSystem(DASx):
                 surfaceSpeciesIndices = self.surfaceSpeciesIndices
                 surfaceReactionIndices = self.surfaceReactionIndices
                 logging.info('Surface has {0} Species and {1} Reactions'.format(len(surfaceSpeciesIndices),len(surfaceReactionIndices)))
+                
             if maxSurfaceAccumReaction and maxSurfaceDifLnAccumNum > toleranceMoveSurfaceReactionToCore:
                 logging.info('Moving reaction {0} from surface to core'.format(maxSurfaceAccumReaction))
                 surfaceReactions.remove(maxSurfaceAccumReaction)
@@ -844,7 +884,7 @@ cdef class ReactionSystem(DASx):
                 surfaceSpeciesIndices = self.surfaceSpeciesIndices
                 surfaceReactionIndices = self.surfaceReactionIndices
                 logging.info('Surface has {0} Species and {1} Reactions'.format(len(surfaceSpeciesIndices),len(surfaceReactionIndices)))
-                            
+              
                 # Interrupt simulation if that flux exceeds the characteristic rate times a tolerance
             if (not ignoreOverallFluxCriterion) and (maxSpeciesRate > toleranceMoveToCore * charRate and not invalidObject):
                 logging.info('At time {0:10.4e} s, species {1} exceeded the minimum rate for moving to model core'.format(self.t, maxSpecies))
@@ -874,17 +914,11 @@ cdef class ReactionSystem(DASx):
             
             #move species to surface and interrupt if the difference in natural log of total accumulation number exceeds tolerance
             #small tolerance case
-            if maxLayeringDifLnAccumNum > toleranceMoveEdgeReactionToSurface and not invalidObject:
-                invalidObject = maxLayeringReaction
-                
-                surfaceReactions.append(maxLayeringReaction) #add to surface trackers
-                
-                for i in productIndices[maxLayeringReactionIndex+numCoreReactions]:
-                    if i > numCoreSpecies:
-                        surfaceSpecies.append(edgeSpecies[i-numCoreSpecies])
-                for i in reactantIndices[maxLayeringReactionIndex+numCoreReactions]:
-                    if i > numCoreSpecies:
-                        surfaceSpecies.append(edgeSpecies[i-numCoreSpecies])
+
+            if not (maxLayeringReaction in invalidObject) and maxLayeringDifLnAccumNum > toleranceMoveEdgeReactionToSurface and len(invalidObject) < maxNumObjsPerIter:
+                invalidObject.append(maxLayeringReaction)
+                newSurfaceReactions.append(maxLayeringReaction)
+                newSurfaceReactionInds.append(maxLayeringReactionIndex)
                 
                 logging.info('At time {0:10.4e} s, Reaction {1} exceeded the minimum difference in total log(accumulation number) for moving from edge to model surface'.format(self.t, maxAccumReaction))
                 self.logRates(charRate, maxSpecies, maxSpeciesRate, maxLayeringDifLnAccumNum, maxNetwork, maxNetworkRate)
@@ -932,7 +966,9 @@ cdef class ReactionSystem(DASx):
             # Increment destination step time if necessary
             if self.t >= 0.9999 * stepTime:
                 stepTime *= 10.0
-                
+        
+        #change surface species and reactions based on what will be added to the surface
+        surfaceSpecies,surfaceReactions=self.addReactionsToSurface(newSurfaceReactions,newSurfaceReactionInds,surfaceSpecies,surfaceReactions,edgeSpecies)
         
         # notify reaction system listeners
         self.notify()
@@ -1080,7 +1116,7 @@ cdef class ReactionSystem(DASx):
         rateDeriv = V * rateDeriv
 
         return rateDeriv
-        
+    
 ################################################################################
 
 class TerminationTime:
@@ -1115,6 +1151,4 @@ def getReverseSortedIndices(arr):
     out.reverse()
     out = numpy.array(out,dtype=numpy.int)
     return out
-
-
     
