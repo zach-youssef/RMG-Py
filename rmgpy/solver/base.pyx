@@ -903,7 +903,7 @@ cdef class ReactionSystem(DASx):
                         if not bimolecularThreshold[i,j]:
                             if coreSpeciesConcentrations[i]*coreSpeciesConcentrations[j] > bimolecularThresholdVal:
                                 bimolecularThreshold[i,j] = True
-            
+
                 # Interrupt simulation if that flux exceeds the characteristic rate times a tolerance
             if not (maxSpecies in invalidObjects) and (not ignoreOverallFluxCriterion) and (maxSpeciesRate > toleranceMoveToCore * charRate) and len(invalidObjects) < maxNumObjsPerIter:
                 logging.info('At time {0:10.4e} s, species {1} exceeded the minimum rate for moving to model core'.format(self.t, maxSpecies))
