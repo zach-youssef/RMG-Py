@@ -544,7 +544,6 @@ cdef class ReactionSystem(DASx):
         numPdepNetworks = len(pdepNetworks)
         numCoreReactions = len(coreReactions)
         
-        
         speciesIndex = {}
         for index, spec in enumerate(coreSpecies):
             speciesIndex[spec] = index
