@@ -563,9 +563,6 @@ cdef class ReactionSystem(DASx):
         filterReactions = modelSettings.filterReactions
         maxNumObjsPerIter = modelSettings.maxNumObjsPerIter
         
-        assert set(coreReactions) >= set(surfaceReactions), 'given surface reactions are not a subset of core reactions'
-        assert set(coreSpecies) >= set(surfaceSpecies), 'given surface species are not a subset of core species' 
-        
         speciesIndex = {}
         for index, spec in enumerate(coreSpecies):
             speciesIndex[spec] = index
