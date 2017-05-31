@@ -563,6 +563,9 @@ cdef class ReactionSystem(DASx):
         filterReactions = modelSettings.filterReactions
         maxNumObjsPerIter = modelSettings.maxNumObjsPerIter
         
+        assert set(coreReactions) >= set(surfaceReactions), 'given surface reactions are not a subset of core reactions'
+        assert set(coreSpecies) >= set(surfaceSpecies), 'given surface species are not a subset of core species' 
+        
         speciesIndex = {}
         for index, spec in enumerate(coreSpecies):
             speciesIndex[spec] = index
@@ -904,7 +907,7 @@ cdef class ReactionSystem(DASx):
                             if coreSpeciesConcentrations[i]*coreSpeciesConcentrations[j] > bimolecularThresholdVal:
                                 bimolecularThreshold[i,j] = True
 
-                # Interrupt simulation if that flux exceeds the characteristic rate times a tolerance
+            # Interrupt simulation if that flux exceeds the characteristic rate times a tolerance
             if not (maxSpecies in invalidObjects) and (not ignoreOverallFluxCriterion) and (maxSpeciesRate > toleranceMoveToCore * charRate) and len(invalidObjects) < maxNumObjsPerIter:
                 logging.info('At time {0:10.4e} s, species {1} exceeded the minimum rate for moving to model core'.format(self.t, maxSpecies))
                 self.logRates(charRate, maxSpecies, maxSpeciesRate, maxDifLnAccumNum, maxNetwork, maxNetworkRate)
