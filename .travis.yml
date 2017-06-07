@@ -29,7 +29,7 @@ before_install:
   - cd ..
   - git clone https://github.com/ReactionMechanismGenerator/RMG-database.git
   - cd RMG-database
-  - git checkout sulfur
+  - git checkout SAtomType
   - cd ../RMG-Py
 
 install:
