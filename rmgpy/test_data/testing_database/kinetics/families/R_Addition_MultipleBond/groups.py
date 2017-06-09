@@ -59,7 +59,7 @@ entry(
     label = "Od_R",
     group = 
 """
-1 *1 Od  u0 {2,D}
+1 *1 O2d  u0 {2,D}
 2 *2 R!H u0 {1,D}
 """,
     kinetics = None,
@@ -68,17 +68,17 @@ entry(
 entry(
     index = 5,
     label = "Nd_R",
-    group = "OR{N1d_R, N3d_R}",
+    group = "OR{N1dc_R, N3d_R}",
     kinetics = None,
 )
 
 entry(
     index = 6,
-    label = "N1d_R",
+    label = "N1dc_R",
     group = 
 """
-1 *1 N1d u0 p2 {2,D}
-2 *2 R!H u0 {1,D}
+1 *1 N1dc u0 p2 {2,D}
+2 *2 R!H  u0 {1,D}
 """,
     kinetics = None,
 )
@@ -117,7 +117,7 @@ entry(
     label = "N5t_R",
     group = 
 """
-1 *1 N5t u0 {2,T}
+1 *1 N5tc u0 {2,T}
 2 *2 R!H u0 {1,T}
 """,
     kinetics = None,
@@ -413,7 +413,7 @@ L1: R_R
     L2: Ct_R
     L2: Od_R
     L2: Nd_R
-        L3: N1d_R
+        L3: N1dc_R
         L3: N3d_R
     L2: Nt_R
         L3: N3t_R
@@ -451,7 +451,7 @@ L1: YJ
 )
 
 forbidden(
-    label = "O2d",
+    label = "Od",
     group = 
 """
 1 *1 O u0 {2,D}
