@@ -590,7 +590,7 @@ class TestGroup(unittest.TestCase):
     def setUp(self):
         self.adjlist = """
 1 *2 [Cs,Cd] u0 {2,[S,D]} {3,S}
-2 *1 [Os,Od] u0 {1,[S,D]}
+2 *1 [O2s,O2d] u0 {1,[S,D]}
 3    R!H     u0 {1,S}
             """
         self.group = Group().fromAdjacencyList(self.adjlist)
@@ -658,8 +658,8 @@ class TestGroup(unittest.TestCase):
         self.assertTrue(atom1.radicalElectrons == [0])
         
         self.assertTrue(atom2.label == '*1')
-        self.assertTrue(atom2.atomType[0].label in ['Os','Od'])
-        self.assertTrue(atom2.atomType[1].label in ['Os','Od'])
+        self.assertTrue(atom2.atomType[0].label in ['O2s','O2d'])
+        self.assertTrue(atom2.atomType[1].label in ['O2s','O2d'])
         self.assertTrue(atom2.radicalElectrons == [0])
         
         self.assertTrue(atom3.label == '')
@@ -681,7 +681,7 @@ class TestGroup(unittest.TestCase):
         Test the Group.isIsomorphic() method.
         """
         adjlist = """
-1  *1 [Os,Od] u0 {3,[S,D]}
+1  *1 [O2s,O2d] u0 {3,[S,D]}
 2     R!H     u0 {3,S}
 3  *2 [Cs,Cd] u0 {1,[S,D]} {2,S}
             """
@@ -694,7 +694,7 @@ class TestGroup(unittest.TestCase):
         Test the Group.findIsomorphism() method.
         """
         adjlist = """
-1  *1 [Os,Od] u0 {3,[S,D]}
+1  *1 [O2s,O2d] u0 {3,[S,D]}
 2     R!H     u0 {3,S}
 3  *2 [Cs,Cd] u0 {1,[S,D]} {2,S}
             """
@@ -1155,7 +1155,7 @@ class TestGroup(unittest.TestCase):
         adjlist2 = """
     1 *1 R!H       u1 {2,[S,D]} {4,[S,D]}
     2 *2 [CO,Cdd]  u0 {1,[S,D]} {3,[S,D]}
-    3 *3 [Od,Cd]   u0 {2,[S,D]}
+    3 *3 [O2d,Cd]   u0 {2,[S,D]}
     4 *4 [Cdd,Cd]  u0 {1,[S,D]}
 """
         group2 = Group().fromAdjacencyList(adjlist2)
@@ -1337,13 +1337,13 @@ graph G {
 """)
 
         end2 = Group().fromAdjacencyList("""
-1 *2 Os u0 {2,S}
+1 *2 O2s u0 {2,S}
 2 *3 Cs u0 {1,S}
 """)
         desiredMerge2 = Group().fromAdjacencyList("""
 1 *1 R!H u1 {2,S} {4,S}
 2 *4 R!H u0 {1,S} {3,S}
-3 *2 Os u0 {2,S} {4,S}
+3 *2 O2s u0 {2,S} {4,S}
 4 *3 Cs u0 {3,S} {1,S}
 """)
         mergedGroup = backbone2.mergeGroups(end2)
