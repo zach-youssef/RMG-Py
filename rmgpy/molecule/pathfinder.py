@@ -264,7 +264,7 @@ def findAllDelocalizationPathsLonePairRadical(atom1):
 
 def findAllDelocalizationPathsN5dd_N5ts(atom1):
     """
-    Find all the resonance structures of nitrogen atoms with two double bonds (N5dd)
+    Find all the resonance structures of nitrogen atoms with two double bonds (N5ddc)
     and nitrogen atoms with one triple and one single bond (N5ts)
     """
     cython.declare(paths=list)

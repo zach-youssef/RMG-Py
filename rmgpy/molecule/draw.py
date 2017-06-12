@@ -297,7 +297,7 @@ class MoleculeDrawer:
         flag_charge = 0
         
         for atom in self.molecule.atoms:
-            if atom.charge != 0: #atomType.label in ['N5s','N5d','N5dd','N5t','N5b']:
+            if atom.charge != 0: #atomType.label in ['N5sc','N5dc','N5ddc','N5tc','N5b']:
                  flag_charge = 1
                  break
         

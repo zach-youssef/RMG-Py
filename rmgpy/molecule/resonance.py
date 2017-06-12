@@ -349,7 +349,7 @@ def generateLonePairRadicalResonanceStructures(mol):
 
 def generateN5dd_N5tsResonanceStructures(mol):
     """
-    Generate all of the resonance structures formed by shifts between N5dd and N5ts.
+    Generate all of the resonance structures formed by shifts between N5ddc and N5ts.
     """
     cython.declare(isomers=list, paths=list, index=cython.int, isomer=Molecule)
     cython.declare(atom=Atom, atom1=Atom, atom2=Atom, atom3=Atom)
@@ -362,7 +362,7 @@ def generateN5dd_N5tsResonanceStructures(mol):
     for atom in mol.vertices:
         paths = pathfinder.findAllDelocalizationPathsN5dd_N5ts(atom)
         for atom1, atom2, atom3, bond12, bond13, direction in paths:
-            # from N5dd to N5ts
+            # from N5ddc to N5ts
             if direction == 1:
                 # Adjust to (potentially) new resonance isomer
                 bond12.decrementOrder()
@@ -395,7 +395,7 @@ def generateN5dd_N5tsResonanceStructures(mol):
                 isomer.updateAtomTypes(logSpecies=False)
                 isomers.append(isomer)
             
-            # from N5ts to N5dd
+            # from N5ts to N5ddc
             if direction == 2:
                 # Adjust to (potentially) new resonance isomer
                 bond12.decrementOrder()

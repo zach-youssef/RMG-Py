@@ -589,10 +589,10 @@ class GroupAtom(Vertex):
         #Instead we will set it to 0 here
 
         #Hard code charge for a few atomtypes
-        # if atomtype in [atomTypes[x] for x in ['N5d', 'N5dd', 'N5t', 'N5b', 'N5s']]:
+        # if atomtype in [atomTypes[x] for x in ['N5dc', 'N5ddc', 'N5tc', 'N5b', 'N5sc']]:
         #     newAtom.lonePairs = 0
         #     newAtom.charge = 1
-        # elif atomtype in [atomTypes[x] for x in ['N1d']]:
+        # elif atomtype in [atomTypes[x] for x in ['N1dc']]:
         #     newAtom.charge = -1
         # elif newAtom.lonePairs == -100:
         #     newAtom.lonePairs = defaultLonePairs[newAtom.symbol]
@@ -2027,9 +2027,9 @@ class Group(Graph):
                 else:
                     raise UnexpectedChargeError(graph = newMolecule)
                 #check hardcoded atomtypes
-                if groupAtom.atomType[0] in [atomTypes[x] for x in ['N5d', 'N5dd', 'N5t', 'N5b', 'N5s', 'O4tc']] and atom.charge == 1:
+                if groupAtom.atomType[0] in [atomTypes[x] for x in ['N5dc', 'N5ddc', 'N5tc', 'N5b', 'N5sc', 'O4tc']] and atom.charge == 1:
                     pass
-                elif groupAtom.atomType[0] in [atomTypes[x] for x in ['N1d', 'N2s']] and atom.charge == -1:
+                elif groupAtom.atomType[0] in [atomTypes[x] for x in ['N1dc', 'N1sc']] and atom.charge == -1:
                     pass
                 #declared charge in original group is not same as new charge
                 elif atom.charge in groupAtom.charge:

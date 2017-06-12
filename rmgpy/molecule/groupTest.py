@@ -840,12 +840,12 @@ class TestGroup(unittest.TestCase):
         self.assertTrue(group6.isIsomorphic(newGroup))
         #test addition of lone pairs
         adjlist7 = """
-1  *1 N1d u0
+1  *1 N1dc u0
             """
 
         adjlist8 = """
-1  *1 N1d u0 p2 {2,D}
-2     C   u0 {1,D}
+1  *1 N1dc u0 p2 {2,D}
+2     C    u0 {1,D}
             """
         group7 = Group().fromAdjacencyList(adjlist7)
         group8 = Group().fromAdjacencyList(adjlist8)
@@ -1199,7 +1199,7 @@ class TestGroup(unittest.TestCase):
 
         #test the creation of a positively charged species
         adjlist = """
-1  *1 N5s u0
+1  *1 N5sc u0
         """
         answer_smiles = '[NH4+]'
         self.assertTrue(performSampMoleComparison(adjlist, answer_smiles))
@@ -1207,16 +1207,16 @@ class TestGroup(unittest.TestCase):
         #test the creation of a negatively charged species
         #commented out until new nitrogen atom types added in
 #         adjlist = """
-# 1  *1 N2s u0
+# 1  *1 N1sc u0
 #         """
 #         answer_smiles = '[NH2-]'
 #         self.assertTrue(performSampMoleComparison(adjlist, answer_smiles))
 
         #test creation of charged species when some single bonds present
         adjlist = """
-1 *2 [N5s,N5d] u0 {2,S} {3,S}
-2 *3 R!H       u1 {1,S}
-3 *4 H         u0 {1,S}
+1 *2 [N5sc,N5dc] u0 {2,S} {3,S}
+2 *3 R!H        u1 {1,S}
+3 *4 H          u0 {1,S}
 """
         answer_smiles = '[NH3+][CH2]'
         self.assertTrue(performSampMoleComparison(adjlist, answer_smiles))
