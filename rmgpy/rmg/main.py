@@ -593,7 +593,8 @@ class RMG(util.Subject):
 
             # Main RMG loop
             while not self.done:
-
+                
+                self.reactionModel.iteration += 1
                 self.done = True
                 objectsToEnlarge = []
                 newSurfaceSpcsAdd = set()
