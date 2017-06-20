@@ -650,6 +650,8 @@ def applyEnergyCorrections(E0, modelChemistry, atoms, bonds):
         atomEnergies = {'H':-0.498618853119+ SOC['H'], 'N':-54.5697851544+ SOC['N'], 'O':-75.0515210278+ SOC['O'], 'C':-37.8287310027+ SOC['C'], 'P':-341.167615941+ SOC['P'], 'S': -398.001619915+ SOC['S']}
     elif modelChemistry == 'b3lyp/6-31G**':
         atomEnergies = {'H':-0.500426155, 'C':-37.850331697831, 'O':-75.0535872748806, 'S':-398.100820107242}
+    elif modelChemistry == 'wB97X-D-aVTD':
+        atomEnergies = {'H':-0.502803+ SOC['H'], 'N':-54.585652+ SOC['N'], 'O':-75.068286+ SOC['O'], 'C':-37.842014+ SOC['C']}
 
     else:
         logging.warning('Unknown model chemistry "{0}"; not applying energy corrections.'.format(modelChemistry))
