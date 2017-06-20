@@ -225,6 +225,8 @@ cdef class Configuration:
         cdef list modes
         cdef int i
         
+        logging.debug('calculating density of states for {}'.format(self.__str__()))
+
         self.Elist = Elist
         self.activeJRotor = activeJRotor
         self.activeKRotor = activeKRotor
@@ -318,7 +320,6 @@ cdef class Configuration:
                 for spec in self.species:
                     self.densStates *= spec.conformer.spinMultiplicity * spec.conformer.opticalIsomers
                     self.sumStates *= spec.conformer.spinMultiplicity * spec.conformer.opticalIsomers
-            
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def mapDensityOfStates(self, numpy.ndarray[numpy.float64_t,ndim=1] Elist, numpy.ndarray[numpy.int_t,ndim=1] Jlist=None):
@@ -333,6 +334,7 @@ cdef class Configuration:
         cdef list Blist
         
         import scipy.interpolate
+
         for r in range(self.Elist.shape[0]):
             if self.densStates[r] > 0:
                 break
