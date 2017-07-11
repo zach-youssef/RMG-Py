@@ -1571,7 +1571,7 @@ def makeProfileGraph(stats_file):
     `ps2pdf output.ps2` which produces a `output.ps2.pdf` file.
     """
     try:
-        from gprof2dot import PstatsParser, DotWriter, SAMPLES, themes
+        from rmgpy.profile_tools.gprof2dot import PstatsParser, DotWriter, SAMPLES, themes
     except ImportError:
         logging.warning('Trouble importing from package gprof2dot. Unable to create a graph of the profile statistics.')
         logging.warning('Try getting the latest version with something like `pip install --upgrade gprof2dot`.')
