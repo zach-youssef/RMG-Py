@@ -599,7 +599,7 @@ class RMG(util.Subject):
                     # Conduct simulation
                     logging.info('Conducting simulation of reaction system %s...' % (index+1))
                     prune = True
-                    if numCoreSpecies < self.minCoreSizeForPrune:
+                    if numCoreSpecies < modelSettings.minCoreSizeForPrune:
                         # Turn pruning off if we haven't reached minimum core size.
                         prune = False
                         
