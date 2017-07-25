@@ -40,7 +40,7 @@ import numpy
 import logging
 
 import rmgpy.constants as constants
-
+from rmgpy.quantity import Quantity
 from rmgpy.cantherm.output import prettify
 from rmgpy.cantherm.gaussian import GaussianLog
 from rmgpy.cantherm.molpro import MolproLog
@@ -258,17 +258,17 @@ class StatMechJob:
                 energy = energy[self.modelChemistry]
             except KeyError:
                 raise InputError('Model chemistry {0!r} not found in from dictionary of energy values in species file {1!r}.'.format(self.modelChemistry, path))
-        if isinstance(energy, GaussianLog):
+        if isinstance(energy, (GaussianLog, QchemLog, MolproLog)):
             energyLog = energy; E0 = None
             energyLog.path = os.path.join(directory, energyLog.path)
-        elif isinstance(energy, QchemLog):
-            energyLog = energy; E0 = None
-            energyLog.path = os.path.join(directory, energyLog.path)
-        elif isinstance(energy, MolproLog):
-            energyLog = energy; E0 = None
-            energyLog.path = os.path.join(directory, energyLog.path)
+            E0_withZPE = None
         elif isinstance(energy, float):
-            energyLog = None; E0 = energy
+            energyLog = None; E0 = energy; E0_withZPE = None
+        elif isinstance(energy, tuple) and len(energy) == 2:
+            # this is likely meant to be a quantity object with ZPE already accounted for
+            energy_temp = Quantity(energy)
+            E0_withZPE = energy_temp.value_si # in J/mol
+            energyLog = None; E0 = None
         
         try:
             geomLog = local_context['geometry']
@@ -323,20 +323,21 @@ class StatMechJob:
         conformer.mass = (mass,"amu")
 
         logging.debug('    Reading energy...')
-        # The E0 that is read from the log file is without the ZPE and corresponds to E_elec
-        if E0 is None:
-            E0 = energyLog.loadEnergy(self.frequencyScaleFactor)
-        else:
-            E0 = E0 * constants.E_h * constants.Na         # Hartree/particle to J/mol
-        E0 = applyEnergyCorrections(E0, self.modelChemistry, atoms, bonds if self.applyBondEnergyCorrections else {})
-        ZPE = statmechLog.loadZeroPointEnergy() * self.frequencyScaleFactor
-        
-        # The E0_withZPE at this stage contains the ZPE
-        E0_withZPE = E0 + ZPE
-        
-        logging.debug('         Scaling factor used = {0:g}'.format(self.frequencyScaleFactor))
-        logging.debug('         ZPE (0 K) = {0:g} kcal/mol'.format(ZPE / 4184.))
-        logging.debug('         E0 (0 K) = {0:g} kcal/mol'.format(E0_withZPE / 4184.))
+        if E0_withZPE is None:
+            # The E0 that is read from the log file is without the ZPE and corresponds to E_elec
+            if E0 is None:
+                E0 = energyLog.loadEnergy(self.frequencyScaleFactor)
+            else:
+                E0 = E0 * constants.E_h * constants.Na         # Hartree/particle to J/mol
+            E0 = applyEnergyCorrections(E0, self.modelChemistry, atoms, bonds if self.applyBondEnergyCorrections else {})
+            ZPE = statmechLog.loadZeroPointEnergy() * self.frequencyScaleFactor
+
+            # The E0_withZPE at this stage contains the ZPE
+            E0_withZPE = E0 + ZPE
+
+            logging.debug('         Scaling factor used = {0:g}'.format(self.frequencyScaleFactor))
+            logging.debug('         ZPE (0 K) = {0:g} kcal/mol'.format(ZPE / 4184.))
+            logging.debug('         E0 (0 K) = {0:g} kcal/mol'.format(E0_withZPE / 4184.))
        
         conformer.E0 = (E0_withZPE*0.001,"kJ/mol")
         
