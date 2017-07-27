@@ -60,7 +60,7 @@ from rmgpy.reaction import Reaction
 from pdep import PDepNetwork
 import rmgpy.util as util
 
-from rmgpy.chemkin import ChemkinWriter
+from rmgpy.chemkin import ChemkinWriter, markDuplicateReactions
 from rmgpy.rmg.output import OutputHTMLWriter
 from rmgpy.rmg.listener import SimulationProfileWriter, SimulationProfilePlotter
 from rmgpy.restart import RestartWriter
@@ -142,6 +142,7 @@ class RMG(util.Subject):
         self.inputFile = inputFile
         self.outputDirectory = outputDirectory
         self.clear()
+        self.speciesConstraintsList = []
         self.databaseSettingsList = []
         self.modelSettingsList = []
         self.simulatorSettingsList = []
@@ -157,6 +158,7 @@ class RMG(util.Subject):
         self.reactionSystems = None
         self.database = None
         
+        self.speciesConstraintsList = []
         self.databaseSettingsList = []
         self.modelSettingsList = []
         self.simulatorSettingsList = []
@@ -215,6 +217,9 @@ class RMG(util.Subject):
         
         if self.quantumMechanics:
             self.reactionModel.quantumMechanics = self.quantumMechanics
+        
+        if self.speciesConstraintsList != []:
+            self.speciesConstraints = self.speciesConstraintsList[0]
             
     def loadThermoInput(self, path=None):
         """
@@ -606,6 +611,10 @@ class RMG(util.Subject):
             else:
                 databaseSettings = self.databaseSettingsList[0]
             
+            if len(self.speciesConstraintsList) > 1 and q > 0:
+                logging.info('changing species constraints')
+                self.speciesConstraints = self.speciesConstraintsList[q]
+            
             self.done = False
 
             # Main RMG loop
@@ -805,7 +814,9 @@ class RMG(util.Subject):
                 )
                 
                 plotSensitivity(self.outputDirectory, index, reactionSystem.sensitiveSpecies)
-
+        
+        self.reactionModel.markChemkinDuplicates()
+        
         # generate Cantera files chem.cti & chem_annotated.cti in a designated `cantera` output folder
         try:
             self.generateCanteraFiles(os.path.join(self.outputDirectory, 'chemkin', 'chem.inp'))

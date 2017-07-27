@@ -320,13 +320,17 @@ def generatedSpeciesConstraints(**kwargs):
         'allowSingletO2',
         'maximumIsotopicAtoms'
     ]
-
+    
+    cDict = {}
+    
     for key, value in kwargs.items():
         if key not in validConstraints:
             raise InputError('Invalid generated species constraint {0!r}.'.format(key))
         
-        rmg.speciesConstraints[key] = value
-
+        cDict[key] = value
+    
+    rmg.speciesConstraintsList.append(cDict)
+    
 def thermoCentralDatabase(host,
                         port,
                         username,
