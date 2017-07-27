@@ -89,7 +89,17 @@ class DatabaseSettings:
         else:
             assert isinstance(kineticsFamilies,list), "kineticsFamilies should be either 'default', 'all', 'none', or a list of names eg. ['H_Abstraction','R_Recombination'] or ['!Intra_Disproportionation']."
             self.kineticsFamilies = kineticsFamilies
-        
+            
+    def __eq__(self,other):
+        boo = True
+        for attribute in dir(self):
+            if attribute[0] != '_':
+                boo &= getattr(self,attribute) == getattr(other,attribute)
+        return boo
+    
+    def __ne__(self,other):
+        return not self == other
+    
 class ModelSettings:
     """
     class for holding the parameters affecting an RMG run
@@ -123,6 +133,16 @@ class ModelSettings:
         else:
             self.maxNumObjsPerIter = maxNumObjsPerIter
             
+    def __eq__(self,other):
+        boo = True
+        for attribute in dir(self):
+            if attribute[0] != '_':
+                boo &= getattr(self,attribute) == getattr(other,attribute)
+        return boo 
+    
+    def __ne__(self,other):
+        return not self == other
+    
 class SimulatorSettings:
     """
     class for holding the parameters affecting the behavior of the solver
@@ -132,3 +152,13 @@ class SimulatorSettings:
         self.rtol = rtol
         self.sens_atol = sens_atol
         self.sens_rtol = sens_rtol
+    
+    def __eq__(self,other):
+        boo = True
+        for attribute in dir(self):
+            if attribute[0] != '_':
+                boo &= getattr(self,attribute) == getattr(other,attribute)
+        return boo
+    
+    def __ne__(self,other):
+        return not self == other

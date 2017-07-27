@@ -288,7 +288,9 @@ class RMG(util.Subject):
         
     def loadDatabase(self,databaseSettings):
         
-        self.database = RMGDatabase()
+        if not self.database:
+            self.database = RMGDatabase()
+            
         self.database.load(
             path = databaseSettings.databaseDirectory,
             thermoLibraries = databaseSettings.thermoLibraries,
@@ -498,11 +500,12 @@ class RMG(util.Subject):
         self.loadDatabase(databaseSettings)
         # Seed mechanisms: add species and reactions from seed mechanism
         # DON'T generate any more reactions for the seed species at this time
-        for seedMechanism in self.seedMechanisms:
+        for seedMechanism in databaseSettings.seedMechanisms:
             self.reactionModel.addSeedMechanismToCore(seedMechanism, react=False)
+
         # Reaction libraries: add species and reactions from reaction library to the edge so
         # that RMG can find them if their rates are large enough
-        for library, option in self.reactionLibraries:
+        for library, option in databaseSettings.reactionLibraries:
             self.reactionModel.addReactionLibraryToEdge(library)
         
         self.reactionModel.kineticsEstimator = databaseSettings.kineticsEstimator
@@ -552,6 +555,8 @@ class RMG(util.Subject):
 
         self.done = False
         
+        databaseSettings = self.databaseSettingsList[0]
+        
         # Initiate first reaction discovery step after adding all core species
         if self.filterReactions:
             # Run the reaction system to update threshold and react flags
@@ -582,12 +587,24 @@ class RMG(util.Subject):
         maxNumSpcsHit = False #default
         
         for q,modelSettings in enumerate(self.modelSettingsList):
+                
+            logging.info('Beginning model generation stage {0}'.format(q+1))
+            
             if len(self.simulatorSettingsList) > 1: 
                 simulatorSettings = self.simulatorSettingsList[q]
             else: #if they only provide one input for simulator use that everytime
                 simulatorSettings = self.simulatorSettingsList[0]
-
-            logging.info('Beginning model generation stage {0}'.format(q+1))
+                
+            if len(self.databaseSettingsList) > 1 and q > 0: #change database settings, reload database if necessary
+                logging.info('switching database settings')
+                if self.databaseSettingsList[q] == databaseSettings:
+                    logging.info('new database settings the same ... continuing')
+                else:
+                    logging.info('new database settings different ... reloading database')
+                    databaseSettings = self.databaseSettingsList[q]
+                    self.reloadDatabase(databaseSettings)
+            else:
+                databaseSettings = self.databaseSettingsList[0]
             
             self.done = False
 
