@@ -1,11 +1,20 @@
 # Data sources
-database(
+database( #first stage
     thermoLibraries = ['primaryThermoLibrary'],
     reactionLibraries = [],
     seedMechanisms = [],
     kineticsDepositories = ['training'],
     kineticsFamilies = 'default',
     kineticsEstimator = 'rate rules',
+)
+
+database( #second stage
+   thermoLibraries = ['primaryThermoLibrary','CBS_QB3_1dHR'],
+   reactionLibraries = ['Dooley/C1'],
+   seedMechanisms = ['Methylformate'],
+   kineticsDepositories = ['training'],
+   kineticsFamilies = 'default',
+   kineticsEstimator = 'rate rules',
 )
 
 # List of species
@@ -53,7 +62,7 @@ model( #second stage
     toleranceInterruptSimulation=1.0,
     maximumEdgeSpecies=100000,
     maxNumObjsPerIter=3,
-    maxNumSpecies = 100,
+    maxNumSpecies = 30,
 )
 
 
