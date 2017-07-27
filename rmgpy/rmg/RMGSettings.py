@@ -32,15 +32,16 @@
 This module contains settings classes for manipulation of RMG run parameters
 """
 import numpy
+import logging
 
 class ModelSettings:
     """
     class for holding the parameters affecting an RMG run
     """
-    def __init__(self,toleranceMoveToCore=None, toleranceMoveEdgeReactionToCore=numpy.inf,toleranceKeepInEdge=0.0, toleranceInterruptSimulation=1.0, 
+    def __init__(self,toleranceMoveToCore=numpy.inf, toleranceMoveEdgeReactionToCore=numpy.inf,toleranceKeepInEdge=0.0, toleranceInterruptSimulation=1.0, 
           toleranceMoveEdgeReactionToSurface=numpy.inf, toleranceMoveSurfaceSpeciesToCore=numpy.inf, toleranceMoveSurfaceReactionToCore=numpy.inf,
-          toleranceMoveEdgeReactionToSurfaceInterrupt=None,toleranceMoveEdgeReactionToCoreInterrupt=None, maximumEdgeSpecies=1000000, minCoreSizeForPrune=50, 
-          minSpeciesExistIterationsForPrune=2, filterReactions=False, ignoreOverallFluxCriterion=False, maxNumSpecies=None, maxNumObjsPerIter=1,terminateAtMaxObjects=False):
+          toleranceMoveEdgeReactionToSurfaceInterrupt=numpy.inf,toleranceMoveEdgeReactionToCoreInterrupt=numpy.inf, maximumEdgeSpecies=1000000, minCoreSizeForPrune=50, 
+          minSpeciesExistIterationsForPrune=2, filterReactions=False, ignoreOverallFluxCriterion=False, maxNumSpecies=numpy.inf, maxNumObjsPerIter=1,terminateAtMaxObjects=False):
         
         self.fluxToleranceKeepInEdge = toleranceKeepInEdge
         self.fluxToleranceMoveToCore = toleranceMoveToCore
@@ -55,28 +56,13 @@ class ModelSettings:
         self.toleranceMoveSurfaceSpeciesToCore = toleranceMoveSurfaceSpeciesToCore
         self.toleranceMoveSurfaceReactionToCore = toleranceMoveSurfaceReactionToCore
         self.terminateAtMaxObjects = terminateAtMaxObjects
+        self.fluxToleranceInterrupt = toleranceInterruptSimulation
+        self.toleranceMoveEdgeReactionToSurfaceInterrupt = toleranceMoveEdgeReactionToSurfaceInterrupt
+        self.toleranceMoveEdgeReactionToCoreInterrupt = toleranceMoveEdgeReactionToCoreInterrupt
+        self.maxNumSpecies = maxNumSpecies
         
-        if toleranceInterruptSimulation:
-            self.fluxToleranceInterrupt = toleranceInterruptSimulation
-        else:
-            self.fluxToleranceInterrupt = toleranceMoveToCore
-            
-        if toleranceMoveEdgeReactionToSurfaceInterrupt:
-            self.toleranceMoveEdgeReactionToSurfaceInterrupt = toleranceMoveEdgeReactionToSurfaceInterrupt
-        else:
-            self.toleranceMoveEdgeReactionToSurfaceInterrupt = toleranceMoveEdgeReactionToSurface
-        
-        if toleranceMoveEdgeReactionToCoreInterrupt:
-            self.toleranceMoveEdgeReactionToCoreInterrupt = toleranceMoveEdgeReactionToCoreInterrupt
-        else:
-            self.toleranceMoveEdgeReactionToCoreInterrupt = toleranceMoveEdgeReactionToCore
-            
-        if maxNumSpecies:
-            self.maxNumSpecies = maxNumSpecies
-        else:
-            self.maxNumSpecies = numpy.inf
-        
-        if maxNumObjsPerIter <= 0:
+        if maxNumObjsPerIter <= 0: #negative value or 0 value set to infinity
+            logging.info('maxNumObjsPerIter was 0 or negative ... setting value to infinity')
             self.maxNumObjsPerIter = numpy.inf
         else:
             self.maxNumObjsPerIter = maxNumObjsPerIter

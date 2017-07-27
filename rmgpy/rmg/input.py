@@ -233,24 +233,21 @@ def solvation(solvent):
         raise InputError("solvent should be a string like 'water'")
     rmg.solvent = solvent
 
-def model(toleranceMoveToCore=None, toleranceMoveEdgeReactionToCore=numpy.inf,toleranceKeepInEdge=0.0, toleranceInterruptSimulation=1.0, 
+def model(toleranceMoveToCore=numpy.inf, toleranceMoveEdgeReactionToCore=numpy.inf,toleranceKeepInEdge=0.0, toleranceInterruptSimulation=1.0, 
           toleranceMoveEdgeReactionToSurface=numpy.inf, toleranceMoveSurfaceSpeciesToCore=numpy.inf, toleranceMoveSurfaceReactionToCore=numpy.inf,
-          toleranceMoveEdgeReactionToSurfaceInterrupt=None,
-          toleranceMoveEdgeReactionToCoreInterrupt=None, maximumEdgeSpecies=1000000, minCoreSizeForPrune=50, 
+          toleranceMoveEdgeReactionToSurfaceInterrupt=numpy.inf,
+          toleranceMoveEdgeReactionToCoreInterrupt=numpy.inf, maximumEdgeSpecies=1000000, minCoreSizeForPrune=50, 
           minSpeciesExistIterationsForPrune=2, filterReactions=False, ignoreOverallFluxCriterion=False,
-          maxNumSpecies=None,maxNumObjsPerIter=1,terminateAtMaxObjects=False):
+          maxNumSpecies=numpy.inf,maxNumObjsPerIter=1,terminateAtMaxObjects=False):
     """
-    How to generate the model. `toleranceMoveToCore` must be specified. 
-    toleranceMoveReactionToCore and toleranceReactionInterruptSimulation refers to an additional criterion for forcing an edge reaction to be included in the core
-    by default this criterion is turned off
-    Other parameters are optional and control the pruning.
-    ignoreOverallFluxCriterion=True will cause the toleranceMoveToCore to be only applied
-    to the pressure dependent network expansion and not movement of species from edge to core
+    How to generate the model. See the Github wiki for full explanations of the above parameters
     """
-    if toleranceMoveToCore is None:
-        raise InputError("You must provide a toleranceMoveToCore value. It should be less than or equal to toleranceInterruptSimulation which is currently {0}".format(toleranceInterruptSimulation))
     if toleranceMoveToCore > toleranceInterruptSimulation:
         raise InputError("toleranceMoveToCore must be less than or equal to toleranceInterruptSimulation, which is currently {0}".format(toleranceInterruptSimulation))
+    if toleranceMoveEdgeReactionToCore > toleranceMoveEdgeReactionToCoreInterrupt:
+        raise InputError("toleranceMoveEdgeReactionToCore must be less than or equal to toleranceMoveEdgeReactionToCoreInterrupt, which is currently {0}".format(toleranceMoveEdgeReactionToCoreInterrupt))
+    if toleranceMoveEdgeReactionToSurface > toleranceMoveEdgeReactionToSurfaceInterrupt:
+        raise InputError("toleranceMoveEdgeReactionToSurface must be less than or equal to toleranceMoveEdgeReactionToSurfaceInterrupt, which is currently {0}".format(toleranceMoveEdgeReactionToSurfaceInterrupt))
     
     rmg.modelSettingsList.append(ModelSettings(toleranceMoveToCore, toleranceMoveEdgeReactionToCore,toleranceKeepInEdge, toleranceInterruptSimulation, 
           toleranceMoveEdgeReactionToSurface, toleranceMoveSurfaceSpeciesToCore, toleranceMoveSurfaceReactionToCore,
