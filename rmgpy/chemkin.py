@@ -1704,8 +1704,9 @@ def markDuplicateReaction(test_reaction, reaction_list):
     It does not add the testReaction to the reactionList - you probably want to do this yourself afterwards.
     """
     reaction1 = test_reaction
+    valid = set([LibraryReaction,TemplateReaction])
     for reaction2 in reaction_list:
-        if reaction1.__class__ != reaction2.__class__:
+        if reaction1.__class__  != reaction2.__class__ and (reaction1.__class__ not in valid and reaction2.__class__ not in valid):
             # TemplateReaction, LibraryReaction, and PDepReaction cannot be
             # duplicates of one another.
             # RHW question: why can't TemplateReaction be duplicate of LibraryReaction, in Chemkin terms? I guess it shouldn't happen in RMG.
