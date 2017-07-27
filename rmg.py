@@ -159,8 +159,8 @@ def main():
         # postprocess the stats
         log_file = os.path.join(args.output_directory, 'RMG.log')
         processProfileStats(stats_file, log_file)
-        makeProfileGraph(stats_file)
-
+        # makeProfileGraph(stats_file)
+        
     else:
 
         rmg = RMG(inputFile=args.file, outputDirectory=args.output_directory)
