@@ -40,7 +40,7 @@ from rmgpy.quantity import Quantity
 from rmgpy.solver.base import TerminationTime, TerminationConversion
 from rmgpy.solver.simple import SimpleReactor
 from rmgpy.solver.liquid import LiquidReactor
-from rmgpy.rmg.RMGSettings import ModelSettings, SimulatorSettings
+from rmgpy.rmg.RMGSettings import ModelSettings, SimulatorSettings, DatabaseSettings
 from model import CoreEdgeReactionModel
 
 from rmgpy.scoop_framework.util import broadcast, get
@@ -64,47 +64,15 @@ def database(
              kineticsDepositories = 'default',
              kineticsEstimator = 'rate rules',
              ):
-    # This function just stores the information about the database to be loaded
-    # We don't actually load the database until after we're finished reading
-    # the input file
-    if isinstance(thermoLibraries, str): thermoLibraries = [thermoLibraries]
-    if isinstance(transportLibraries, str): transportLibraries = [transportLibraries]
-    if isinstance(reactionLibraries, str): reactionLibraries = [reactionLibraries]
-    if isinstance(seedMechanisms, str): seedMechanisms = [seedMechanisms]
-    if isinstance(frequenciesLibraries, str): frequenciesLibraries = [frequenciesLibraries]
-    rmg.databaseDirectory = settings['database.directory']
-    rmg.thermoLibraries = thermoLibraries or []
-    rmg.transportLibraries = transportLibraries
-    # Modify reactionLibraries if the user didn't specify tuple input
-    if reactionLibraries:
-        index = 0
-        while index < len(reactionLibraries):
-            if isinstance(reactionLibraries[index],tuple):
-                pass
-            elif isinstance(reactionLibraries[index],str):
-                reactionLibraries[index] = (reactionLibraries[index], False)
-            else:
-                raise TypeError('reaction libraries must be input as tuples or strings')
-            index += 1
-    rmg.reactionLibraries = reactionLibraries or []
-    rmg.seedMechanisms = seedMechanisms or []
-    rmg.statmechLibraries = frequenciesLibraries or []
-    rmg.kineticsEstimator = kineticsEstimator
-    if kineticsDepositories == 'default':
-        rmg.kineticsDepositories = ['training']
-    elif kineticsDepositories == 'all':
-        rmg.kineticsDepositories = None
-    else:
-        if not isinstance(kineticsDepositories,list):
-            raise InputError("kineticsDepositories should be either 'default', 'all', or a list of names eg. ['training','PrIMe'].")
-        rmg.kineticsDepositories = kineticsDepositories
-
-    if kineticsFamilies in ('default', 'all', 'none'):
-        rmg.kineticsFamilies = kineticsFamilies
-    else:
-        if not isinstance(kineticsFamilies,list):
-            raise InputError("kineticsFamilies should be either 'default', 'all', 'none', or a list of names eg. ['H_Abstraction','R_Recombination'] or ['!Intra_Disproportionation'].")
-        rmg.kineticsFamilies = kineticsFamilies
+    
+    rmg.databaseSettingsList.append(DatabaseSettings(thermoLibraries = thermoLibraries,
+             transportLibraries = transportLibraries,
+             reactionLibraries = reactionLibraries,
+             frequenciesLibraries = frequenciesLibraries,
+             seedMechanisms = seedMechanisms,
+             kineticsFamilies = kineticsFamilies,
+             kineticsDepositories = kineticsDepositories,
+             kineticsEstimator = kineticsEstimator,))
 
 def species(label, structure, reactive=True):
     logging.debug('Found {0} species "{1}" ({2})'.format('reactive' if reactive else 'nonreactive', label, structure.toSMILES()))

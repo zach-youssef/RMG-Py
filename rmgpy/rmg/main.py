@@ -142,6 +142,7 @@ class RMG(util.Subject):
         self.inputFile = inputFile
         self.outputDirectory = outputDirectory
         self.clear()
+        self.databaseSettingsList = []
         self.modelSettingsList = []
         self.simulatorSettingsList = []
     
@@ -149,15 +150,6 @@ class RMG(util.Subject):
         """
         Clear all loaded information about the job (except the file paths).
         """
-        self.databaseDirectory = None
-        self.thermoLibraries = None
-        self.transportLibraries = None
-        self.reactionLibraries = None
-        self.statmechLibraries = None
-        self.seedMechanisms = None
-        self.kineticsFamilies = None
-        self.kineticsDepositories = None
-        self.kineticsEstimator = 'group additivity'
         self.solvent = None
         self.diffusionLimiter = None
         
@@ -165,6 +157,7 @@ class RMG(util.Subject):
         self.reactionSystems = None
         self.database = None
         
+        self.databaseSettingsList = []
         self.modelSettingsList = []
         self.simulatorSettingsList = []
         
@@ -208,7 +201,7 @@ class RMG(util.Subject):
         from input import readInputFile
         if path is None: path = self.inputFile
         readInputFile(path, self)
-        self.reactionModel.kineticsEstimator = self.kineticsEstimator
+        self.reactionModel.kineticsEstimator = self.databaseSettingsList[0].kineticsEstimator
         # If the output directory is not yet set, then set it to the same
         # directory as the input file by default
         if not self.outputDirectory:
@@ -293,20 +286,20 @@ class RMG(util.Subject):
         if path is None: path = self.outputFile
         saveInputFile(path, self)
         
-    def loadDatabase(self):
+    def loadDatabase(self,databaseSettings):
         
         self.database = RMGDatabase()
         self.database.load(
-            path = self.databaseDirectory,
-            thermoLibraries = self.thermoLibraries,
-            transportLibraries = self.transportLibraries,
-            reactionLibraries = [library for library, option in self.reactionLibraries],
-            seedMechanisms = self.seedMechanisms,
-            kineticsFamilies = self.kineticsFamilies,
-            kineticsDepositories = self.kineticsDepositories,
+            path = databaseSettings.databaseDirectory,
+            thermoLibraries = databaseSettings.thermoLibraries,
+            transportLibraries = databaseSettings.transportLibraries,
+            reactionLibraries = [library for library, option in databaseSettings.reactionLibraries],
+            seedMechanisms = databaseSettings.seedMechanisms,
+            kineticsFamilies = databaseSettings.kineticsFamilies,
+            kineticsDepositories = databaseSettings.kineticsDepositories,
             #frequenciesLibraries = self.statmechLibraries,
             depository = False, # Don't bother loading the depository information, as we don't use it
-        )
+        )   
         
         #check libraries
         self.checkLibraries()
@@ -316,8 +309,8 @@ class RMG(util.Subject):
             global solvent
             solvent=self.solvent
         
-        if self.kineticsEstimator == 'rate rules':
-            if '!training' not in self.kineticsDepositories:
+        if databaseSettings.kineticsEstimator == 'rate rules':
+            if '!training' not in databaseSettings.kineticsDepositories:
                 logging.info('Adding rate rules from training set in kinetics families...')
                 # Temporarily remove species constraints for the training reactions
                 copySpeciesConstraints=copy.copy(self.speciesConstraints)
@@ -394,7 +387,7 @@ class RMG(util.Subject):
             self.kineticsdatastore = False
 
         # Load databases
-        self.loadDatabase()
+        self.loadDatabase(self.databaseSettingsList[0])
         
         # Do all liquid-phase startup things:
         if self.solvent:
@@ -421,12 +414,12 @@ class RMG(util.Subject):
     
             # Seed mechanisms: add species and reactions from seed mechanism
             # DON'T generate any more reactions for the seed species at this time
-            for seedMechanism in self.seedMechanisms:
+            for seedMechanism in self.databaseSettingsList[0].seedMechanisms:
                 self.reactionModel.addSeedMechanismToCore(seedMechanism, react=False)
 
             # Reaction libraries: add species and reactions from reaction library to the edge so
             # that RMG can find them if their rates are large enough
-            for library, option in self.reactionLibraries:
+            for library, option in self.databaseSettingsList[0].reactionLibraries:
                 self.reactionModel.addReactionLibraryToEdge(library)
                 
             # Also always add in a few bath gases (since RMG-Java does)
@@ -498,7 +491,26 @@ class RMG(util.Subject):
 
         self.reactionModel.initializeIndexSpeciesDict()
             
+    def reloadDatabase(self, databaseSettings):
+        """
+        reloads the database during a run
+        """
+        self.loadDatabase(databaseSettings)
+        # Seed mechanisms: add species and reactions from seed mechanism
+        # DON'T generate any more reactions for the seed species at this time
+        for seedMechanism in self.seedMechanisms:
+            self.reactionModel.addSeedMechanismToCore(seedMechanism, react=False)
+        # Reaction libraries: add species and reactions from reaction library to the edge so
+        # that RMG can find them if their rates are large enough
+        for library, option in self.reactionLibraries:
+            self.reactionModel.addReactionLibraryToEdge(library)
+        
+        self.reactionModel.kineticsEstimator = databaseSettings.kineticsEstimator
+        
+        self.initializeReactionThresholdAndReactFlags()
 
+        self.reactionModel.initializeIndexSpeciesDict()
+        
     def register_listeners(self):
         """
         Attaches listener classes depending on the options 
@@ -885,12 +897,15 @@ class RMG(util.Subject):
         # If the user specifies it, add unused reaction library reactions to
         # an additional output species and reaction list which is written to the ouput HTML
         # file as well as the chemkin file
-        
-        if self.reactionLibraries:
+        rLibs = []
+        for lib in self.databaseSettingsList:
+            rLibs += lib.reactionLibraries
+        rLibs = list(set(rLibs))
+        if rLibs != []:
             # First initialize the outputReactionList and outputSpeciesList to empty
             self.reactionModel.outputSpeciesList = []
             self.reactionModel.outputReactionList = []
-            for library, option in self.reactionLibraries:
+            for library, option in rLibs:
                 if option:
                     self.reactionModel.addReactionLibraryToOutput(library)
         

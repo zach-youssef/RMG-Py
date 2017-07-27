@@ -67,8 +67,8 @@ class TestInputDatabase(unittest.TestCase):
         global rmg
         # add database properties to RMG
         inp.database(reactionLibraries=['test'])
-        self.assertIsInstance(rmg.reactionLibraries[0], tuple)
-        self.assertFalse(rmg.reactionLibraries[0][1])
+        self.assertIsInstance(rmg.databaseSettingsList[-1].reactionLibraries[0], tuple)
+        self.assertFalse(rmg.databaseSettingsList[-1].reactionLibraries[0][1])
         
     def testImportingDatabaseReactionLibrariesFromFalseTuple(self):
         """
@@ -77,8 +77,8 @@ class TestInputDatabase(unittest.TestCase):
         global rmg
         # add database properties to RMG
         inp.database(reactionLibraries=[('test',False)])
-        self.assertIsInstance(rmg.reactionLibraries[0], tuple)
-        self.assertFalse(rmg.reactionLibraries[0][1])
+        self.assertIsInstance(rmg.databaseSettingsList[-1].reactionLibraries[0], tuple)
+        self.assertFalse(rmg.databaseSettingsList[-1].reactionLibraries[0][1])
         
     def testImportingDatabaseReactionLibrariesFromTrueTuple(self):
         """
@@ -87,9 +87,8 @@ class TestInputDatabase(unittest.TestCase):
         global rmg
         # add database properties to RMG
         inp.database(reactionLibraries=[('test',True)])
-        self.assertIsInstance(rmg.reactionLibraries[0], tuple)
-        self.assertTrue(rmg.reactionLibraries[0][1])
-
+        self.assertIsInstance(rmg.databaseSettingsList[-1].reactionLibraries[0], tuple)
+        self.assertTrue(rmg.databaseSettingsList[-1].reactionLibraries[0][1])
 
 class TestInputThemoCentralDatabase(unittest.TestCase):
     """

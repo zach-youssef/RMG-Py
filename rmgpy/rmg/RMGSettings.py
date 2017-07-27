@@ -33,7 +33,63 @@ This module contains settings classes for manipulation of RMG run parameters
 """
 import numpy
 import logging
+from rmgpy import settings
 
+class DatabaseSettings:
+    """
+    class for controlling what database information is loaded
+    """
+    def __init__(self,
+             thermoLibraries = None,
+             transportLibraries = None,
+             reactionLibraries = None,
+             frequenciesLibraries = None,
+             seedMechanisms = None,
+             kineticsFamilies = 'default',
+             kineticsDepositories = 'default',
+             kineticsEstimator = 'rate rules',
+             ):
+        # This function just stores the information about the database to be loaded
+        # We don't actually load the database until after we're finished reading
+        # the input file
+        if isinstance(thermoLibraries, str): thermoLibraries = [thermoLibraries]
+        if isinstance(transportLibraries, str): transportLibraries = [transportLibraries]
+        if isinstance(reactionLibraries, str): reactionLibraries = [reactionLibraries]
+        if isinstance(seedMechanisms, str): seedMechanisms = [seedMechanisms]
+        if isinstance(frequenciesLibraries, str): frequenciesLibraries = [frequenciesLibraries]
+        self.databaseDirectory = settings['database.directory']
+        self.thermoLibraries = thermoLibraries or []
+        self.transportLibraries = transportLibraries
+        # Modify reactionLibraries if the user didn't specify tuple input
+        if reactionLibraries:
+            index = 0
+            while index < len(reactionLibraries):
+                if isinstance(reactionLibraries[index],tuple):
+                    pass
+                elif isinstance(reactionLibraries[index],str):
+                    reactionLibraries[index] = (reactionLibraries[index], False)
+                else:
+                    raise TypeError('reaction libraries must be input as tuples or strings')
+                index += 1
+                
+        self.reactionLibraries = reactionLibraries or []
+        self.seedMechanisms = seedMechanisms or []
+        self.statmechLibraries = frequenciesLibraries or []
+        self.kineticsEstimator = kineticsEstimator
+        if kineticsDepositories == 'default':
+            self.kineticsDepositories = ['training']
+        elif kineticsDepositories == 'all':
+            self.kineticsDepositories = None
+        else:
+            assert isinstance(kineticsDepositories,list), "kineticsDepositories should be either 'default', 'all', or a list of names eg. ['training','PrIMe']."
+            self.kineticsDepositories = kineticsDepositories
+    
+        if kineticsFamilies in ('default', 'all', 'none'):
+            self.kineticsFamilies = kineticsFamilies
+        else:
+            assert isinstance(kineticsFamilies,list), "kineticsFamilies should be either 'default', 'all', 'none', or a list of names eg. ['H_Abstraction','R_Recombination'] or ['!Intra_Disproportionation']."
+            self.kineticsFamilies = kineticsFamilies
+        
 class ModelSettings:
     """
     class for holding the parameters affecting an RMG run
