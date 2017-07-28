@@ -735,6 +735,10 @@ cdef class ReactionSystem(DASx):
                     
                 totalDivLnAccumNums = numpy.log(totalDivAccumNums)
                 
+                surfaceSpeciesIndices = self.surfaceSpeciesIndices
+                surfaceReactionIndices = self.surfaceReactionIndices
+                
+                #calculate criteria for surface species
                 surfaceTotalDivAccumNums = numpy.ones(len(surfaceReactionIndices))
                 
                 for i in xrange(len(surfaceReactionIndices)):
@@ -775,8 +779,6 @@ cdef class ReactionSystem(DASx):
     
                 surfaceObjects = []
                 surfaceObjectIndices = []
-                surfaceSpeciesIndices = self.surfaceSpeciesIndices
-                surfaceReactionIndices = self.surfaceReactionIndices
                 
                 #movement from surface to core
                 if surfaceReactionIndices != []:
