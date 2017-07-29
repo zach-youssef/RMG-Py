@@ -676,6 +676,7 @@ cdef class ReactionSystem(DASx):
             productIndices = self.productIndices
             reactantIndices = self.reactantIndices
             coreSpeciesConcentrations = self.coreSpeciesConcentrations
+            coreSpeciesRateRatios = max(abs(coreSpeciesProductionRates[i]),abs(coreSpeciesConsumptionRates[i]))/charRate
             
             # Update the maximum species rate and maximum network leak rate arrays
             for index in xrange(numCoreSpecies):
@@ -714,7 +715,7 @@ cdef class ReactionSystem(DASx):
                         if spcIndex != -1 and spcIndex<numCoreSpecies:
                             consumption = coreSpeciesConsumptionRates[spcIndex]
                             if consumption != 0:
-                                totalDivAccumNums[index] *= (reactionRate+consumption)/consumption
+                                totalDivAccumNums[index] += coreSpeciesRateRatios[spcIndex]*np.log((reactionRate+consumption)/consumption)
                             elif coreSpeciesConcentrations[spcIndex] == 0: 
                                 pass  #if the species concentration is zero ignore
                             else:
@@ -725,7 +726,7 @@ cdef class ReactionSystem(DASx):
                         if spcIndex != -1 and spcIndex<numCoreSpecies:
                             production = coreSpeciesProductionRates[spcIndex]
                             if production != 0:
-                                totalDivAccumNums[index] *= (reactionRate+production)/production
+                                totalDivAccumNums[index] += coreSpeciesRateRatios[spcIndex]*np.log((reactionRate+production)/production)
                             elif coreSpeciesConcentrations[spcIndex] == 0: 
                                 pass #if the species concentration is zero ignore
                             else:
@@ -733,7 +734,6 @@ cdef class ReactionSystem(DASx):
                                 infAccumNumIndex = spcIndex
                                 break
                     
-                totalDivLnAccumNums = numpy.log(totalDivAccumNums)
                 
                 surfaceSpeciesIndices = self.surfaceSpeciesIndices
                 surfaceReactionIndices = self.surfaceReactionIndices
