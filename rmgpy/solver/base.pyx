@@ -676,7 +676,7 @@ cdef class ReactionSystem(DASx):
             productIndices = self.productIndices
             reactantIndices = self.reactantIndices
             coreSpeciesConcentrations = self.coreSpeciesConcentrations
-            coreSpeciesRateRatios = max(abs(coreSpeciesProductionRates[i]),abs(coreSpeciesConsumptionRates[i]))/charRate
+            
             
             # Update the maximum species rate and maximum network leak rate arrays
             for index in xrange(numCoreSpecies):
@@ -705,17 +705,20 @@ cdef class ReactionSystem(DASx):
                 invalidObjects.append(maxSpecies)
                 break
             
+            coreSpeciesRateRatios = numpy.array([max(abs(coreSpeciesProductionRates[i]),abs(coreSpeciesConsumptionRates[i]))/charRate for i in xrange(numCoreSpecies)])
+                                       
+                                       
             #get abs(delta(Ln(total accumulation numbers))) (accumulation number=Production/Consumption)
             #(the natural log operation is avoided until after the maximum accumulation number is found)
             if useDynamics:
-                totalDivAccumNums = numpy.ones(numEdgeReactions)
+                totalDivAccumNums = numpy.zeros(numEdgeReactions)
                 for index in xrange(numEdgeReactions):
                     reactionRate = edgeReactionRates[index]
                     for spcIndex in self.reactantIndices[index+numCoreReactions,:]:
                         if spcIndex != -1 and spcIndex<numCoreSpecies:
                             consumption = coreSpeciesConsumptionRates[spcIndex]
                             if consumption != 0:
-                                totalDivAccumNums[index] += coreSpeciesRateRatios[spcIndex]*np.log((reactionRate+consumption)/consumption)
+                                totalDivAccumNums[index] += coreSpeciesRateRatios[spcIndex]*abs(numpy.log((reactionRate+consumption)/consumption))
                             elif coreSpeciesConcentrations[spcIndex] == 0: 
                                 pass  #if the species concentration is zero ignore
                             else:
@@ -726,15 +729,13 @@ cdef class ReactionSystem(DASx):
                         if spcIndex != -1 and spcIndex<numCoreSpecies:
                             production = coreSpeciesProductionRates[spcIndex]
                             if production != 0:
-                                totalDivAccumNums[index] += coreSpeciesRateRatios[spcIndex]*np.log((reactionRate+production)/production)
+                                totalDivAccumNums[index] += coreSpeciesRateRatios[spcIndex]*abs(numpy.log((reactionRate+production)/production))
                             elif coreSpeciesConcentrations[spcIndex] == 0: 
                                 pass #if the species concentration is zero ignore
                             else:
                                 zeroProduction = True #otherwise include edge reaction with most flux
                                 infAccumNumIndex = spcIndex
                                 break
-                
-                totalDivLnAccumNums = totalDivAccumNums
                 
                 surfaceSpeciesIndices = self.surfaceSpeciesIndices
                 surfaceReactionIndices = self.surfaceReactionIndices
@@ -855,7 +856,7 @@ cdef class ReactionSystem(DASx):
                 validLayeringIndices = self.validLayeringIndices
                 
                 for ind,obj in enumerate(edgeReactions):
-                    dlnaccum = totalDivLnAccumNums[ind]
+                    dlnaccum = totalDivAccumNums[ind]
                     if dlnaccum > toleranceMoveEdgeReactionToCore:
                         if not(obj in newObjects or obj in invalidObjects):
                             newObjects.append(edgeReactions[ind])
@@ -900,7 +901,7 @@ cdef class ReactionSystem(DASx):
                     if isinstance(obj,Species):
                         logging.info('At time {0:10.4e} s, species {1} at rate ratio {2} exceeded the minimum rate for moving to model core of {3}'.format(self.t, obj,edgeSpeciesRateRatios[ind],toleranceMoveToCore))
                     elif isinstance(obj,Reaction):
-                        dlnaccum = totalDivLnAccumNums[ind]
+                        dlnaccum = totalDivAccumNums[ind]
                         if i in newSurfaceRxnInds:
                             logging.info('At time {0:10.4e} s, Reaction {1} at {2} exceeded the minimum difference in total log(accumulation number) for moving to model surface of {3}'.format(self.t, obj, dlnaccum,toleranceMoveEdgeReactionToSurface))
                             newSurfaceReactions.append(obj)
