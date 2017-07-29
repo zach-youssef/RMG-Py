@@ -733,7 +733,8 @@ cdef class ReactionSystem(DASx):
                                 zeroProduction = True #otherwise include edge reaction with most flux
                                 infAccumNumIndex = spcIndex
                                 break
-                    
+                
+                totalDivLnAccumNums = totalDivAccumNums
                 
                 surfaceSpeciesIndices = self.surfaceSpeciesIndices
                 surfaceReactionIndices = self.surfaceReactionIndices
