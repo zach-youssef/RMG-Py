@@ -695,7 +695,7 @@ cdef class ReactionSystem(DASx):
                 if maxNetworkLeakRateRatios[index] < networkLeakRateRatios[index]:
                     maxNetworkLeakRateRatios[index] = networkLeakRateRatios[index]
             
-            if charRate == 0:
+            if useDynamics and charRate == 0 and len(edgeSpeciesRates)>0:
                 maxSpeciesIndex = numpy.argmax(edgeSpeciesRates)
                 maxSpecies = edgeSpecies[maxSpeciesIndex]
                 maxSpeciesRate = edgeSpeciesRates[maxSpeciesIndex]
@@ -703,6 +703,11 @@ cdef class ReactionSystem(DASx):
                 self.logRates(charRate, maxSpecies, maxSpeciesRate, numpy.inf, maxNetwork, maxNetworkRate)
                 self.logConversions(speciesIndex, y0)
                 invalidObjects.append(maxSpecies)
+                break
+            elif len(edgeSpeciesRates) == 0:
+                newSpc = edgeSpeces[0]
+                logging.info('At time {0:10.4e} s, species {1} was added to model core to avoid singularity'.format(self.t, newSpc))
+                invalidObjects.append(newSpc)
                 break
 
             #get abs(delta(Ln(total accumulation numbers))) (accumulation number=Production/Consumption)
