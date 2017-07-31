@@ -705,7 +705,7 @@ cdef class ReactionSystem(DASx):
                 invalidObjects.append(maxSpecies)
                 break
             elif len(edgeSpeciesRates) == 0:
-                newSpc = edgeSpeces[0]
+                newSpc = edgeSpecies[0]
                 logging.info('At time {0:10.4e} s, species {1} was added to model core to avoid singularity'.format(self.t, newSpc))
                 invalidObjects.append(newSpc)
                 break
