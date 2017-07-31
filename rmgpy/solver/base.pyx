@@ -711,7 +711,7 @@ cdef class ReactionSystem(DASx):
                 if charRate != 0:
                     coreSpeciesRateRatios = numpy.array([max(abs(coreSpeciesProductionRates[i]),abs(coreSpeciesConsumptionRates[i]))/charRate for i in xrange(numCoreSpecies)])
                 else:
-                    coreSpeciesRateRatios = numpy.ones(coreSpeciesProductionRates.shape)
+                    coreSpeciesRateRatios = numpy.ones(coreSpeciesProductionRates)
                     
                 totalDivAccumNums = numpy.zeros(numEdgeReactions)
                 for index in xrange(numEdgeReactions):
