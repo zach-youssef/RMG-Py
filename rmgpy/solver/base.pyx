@@ -700,18 +700,17 @@ cdef class ReactionSystem(DASx):
                 maxSpecies = edgeSpecies[maxSpeciesIndex]
                 maxSpeciesRate = edgeSpeciesRates[maxSpeciesIndex]
                 logging.info('At time {0:10.4e} s, species {1} was added to model core to avoid singularity'.format(self.t, maxSpecies))
-                self.logRates(charRate, maxSpecies, maxSpeciesRate, numpy.inf, maxNetwork, maxNetworkRate)
-                self.logConversions(speciesIndex, y0)
                 invalidObjects.append(maxSpecies)
                 break
 
             #get abs(delta(Ln(total accumulation numbers))) (accumulation number=Production/Consumption)
             #(the natural log operation is avoided until after the maximum accumulation number is found)
             if useDynamics:
+                
                 if charRate != 0:
                     coreSpeciesRateRatios = numpy.array([max(abs(coreSpeciesProductionRates[i]),abs(coreSpeciesConsumptionRates[i]))/charRate for i in xrange(numCoreSpecies)])
                 else:
-                    coreSpeciesRateRatios = numpy.ones(coreSpeciesProductionRates)
+                    coreSpeciesRateRatios = numpy.ones(coreSpeciesProductionRates) #default original dynamics number
                     
                 totalDivAccumNums = numpy.zeros(numEdgeReactions)
                 for index in xrange(numEdgeReactions):
