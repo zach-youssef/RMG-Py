@@ -604,7 +604,8 @@ class Network:
                 reac = products.index(rxn.reactants) + Nisom + Nreac
                 prod = isomers.index(rxn.products[0])
             else:
-                raise NetworkError('Unexpected type of path reaction "{0}"'.format(rxn))
+                logging.info('Path reaction {0} not found in reaction network {1}'.format(rxn,self.label))
+                continue
         
             # Compute the microcanonical rate coefficient k(E)
             reacDensStates = densStates[reac,:,:]
