@@ -1202,21 +1202,23 @@ class CoreEdgeReactionModel:
         """
         Remove species `spec` from the reaction model edge.
         """
-
         # remove the species
         self.edge.species.remove(spec)
         self.indexSpeciesDict.pop(spec.index)
 
         # clean up species references in reactionSystems
         for reactionSystem in reactionSystems:
-            reactionSystem.speciesIndex.pop(spec)
+            try:
+                reactionSystem.speciesIndex.pop(spec)
+            except:
+                pass
 
             # identify any reactions it's involved in
             rxnList = []
             for rxn in reactionSystem.reactionIndex:
                 if spec in rxn.reactants or spec in rxn.products:
                     rxnList.append(rxn)
-
+                    
             for rxn in rxnList:
                 reactionSystem.reactionIndex.pop(rxn)
 
