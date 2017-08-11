@@ -627,6 +627,7 @@ class Species(object):
             self.conformer.E0 = self.getThermoData().toWilhoit().E0
         self.conformer.modes = conformer.modes
         self.conformer.spinMultiplicity = conformer.spinMultiplicity
+        assert self.conformer.E0 is not None
         
     def generateEnergyTransferModel(self):
         """

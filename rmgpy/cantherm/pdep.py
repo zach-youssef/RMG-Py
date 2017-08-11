@@ -223,6 +223,10 @@ class PressureDependenceJob(object):
         )
 
     def execute(self, outputFile, plot, format='pdf'):
+        
+        for config in self.network.isomers + self.network.reactants + self.network.products:
+            for spec in config.species:
+                assert spec.conformer.E0 is not None, 'species {0} is missing energy for its conformer'.format(spec.label)
         self.network.printSummary()
         
         if outputFile is not None:
