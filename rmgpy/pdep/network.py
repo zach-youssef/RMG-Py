@@ -499,7 +499,7 @@ class Network:
                 logging.debug('Calculating density of states for reactant channel "{0}"'.format(self.reactants[n]))
                 self.reactants[n].calculateDensityOfStates(Elist, activeKRotor=self.activeKRotor, activeJRotor=self.activeJRotor, rmgmode=self.rmgmode)
             else:
-                logging.debug('NOT calculating density of states for reactant channel "{0}"'.format(self.reactants[n]))
+                logging.warning('NOT calculating density of states for reactant channel "{0}". Missing Statmech.'.format(self.reactants[n]))
             
         # Densities of states for product channels
         if not self.rmgmode:
@@ -508,7 +508,7 @@ class Network:
                     logging.debug('Calculating density of states for product channel "{0}"'.format(self.products[n]))
                     self.products[n].calculateDensityOfStates(Elist, activeKRotor=self.activeKRotor, activeJRotor=self.activeJRotor, rmgmode=self.rmgmode)
                 else:
-                    logging.debug('NOT calculating density of states for product channel "{0}"'.format(self.products[n]))
+                    logging.warning('NOT calculating density of states for product channel "{0}" Missing Statmech.'.format(self.products[n]))
 
         logging.debug('')
 
