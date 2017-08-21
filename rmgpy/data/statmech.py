@@ -634,6 +634,7 @@ class StatmechDatabase(object):
         in order, returning the first match found, before falling back to
         estimation via group additivity.
         """
+        logging.debug('Retrieving stat mech data for {}.'.format(molecule.toSMILES()))
         statmechModel = None
         # Check the libraries in order first; return the first successful match
         for label in self.libraryOrder:
