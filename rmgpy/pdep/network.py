@@ -51,8 +51,8 @@ class Network:
     Attribute               Description
     ======================= ====================================================
     `isomers`               A list of the unimolecular isomers in the network
-    `reactants`             A list of the bimolecular reactant channels in the network
-    `products`              A list of the bimolecular product channels in the network
+    `reactants`             A list of the bimolecular reactant channels (Configuration objects) in the network
+    `products`              A list of the bimolecular product channels (Configuration objects) in the network
     `pathReactions`         A list of "path" reaction objects that connect adjacent isomers (the high-pressure-limit)
     `bathGas`               A dictionary of the bath gas species (keys) and their mole fractions (values)
     `netReactions`          A list of "net" reaction objects that connect any pair of isomers
