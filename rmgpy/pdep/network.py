@@ -500,7 +500,7 @@ class Network:
                 self.reactants[n].calculateDensityOfStates(Elist, activeKRotor=self.activeKRotor, activeJRotor=self.activeJRotor, rmgmode=self.rmgmode)
             else:
                 logging.warning('NOT calculating density of states for reactant channel "{0}". Missing Statmech.'.format(self.reactants[n]))
-            
+                logging.warning('Reactants: {}'.format(repr(self.reactants[n])))
         # Densities of states for product channels
         if not self.rmgmode:
             for n in range(Nprod):
@@ -509,7 +509,7 @@ class Network:
                     self.products[n].calculateDensityOfStates(Elist, activeKRotor=self.activeKRotor, activeJRotor=self.activeJRotor, rmgmode=self.rmgmode)
                 else:
                     logging.warning('NOT calculating density of states for product channel "{0}" Missing Statmech.'.format(self.products[n]))
-
+                    logging.warning('Products: {}'.format(repr(self.products[n])))
         logging.debug('')
 
 #        import pylab
@@ -999,5 +999,8 @@ class Network:
         logging.log(level, 'Path reactions:')
         for rxn in self.pathReactions:
             logging.log(level, '    {0:<48s} {1:12g} kJ/mol'.format(rxn, float(rxn.transitionState.conformer.E0.value_si*0.001)))
+        logging.log(level, 'Net reactions:')
+        for rxn in self.netReactions:
+            logging.log(level, '    {0:<48s}'.format(rxn))
         logging.log(level, '========================================================================')
         logging.log(level, '')
