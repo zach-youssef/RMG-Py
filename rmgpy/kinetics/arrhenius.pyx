@@ -32,6 +32,8 @@ from libc.math cimport exp, log, sqrt, log10
 
 cimport rmgpy.constants as constants
 import rmgpy.quantity as quantity
+from kineticsdata import KineticsData
+from model import PdepKineticsModel
 ################################################################################
 
 cdef class Arrhenius(KineticsModel):
@@ -109,7 +111,54 @@ cdef class Arrhenius(KineticsModel):
             return self._T0
         def __set__(self, value):
             self._T0 = quantity.Temperature(value)
-
+    
+    def __pow__(self,other,q):
+        arr = Arrhenius(A=self.A**other,n=self.n*other,Ea=(self.Ea.value_si*other,'J/mol'),T0=(1.0,"K"), Tmin=None, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+        return arr
+    
+    def __mul__(other,self):
+        return self*other
+    
+    def __mul__(self,other):
+        if isinstance(other,PdepKineticsModel):
+            raise TypeError('multiplication of non-pdep and pdep kinetics not supported')
+        elif isinstance(other,Arrhenius):
+             return Arrhenius(A=self.A*other.A, n=self.n+other.n, Ea=(self.Ea.value_si,'J/mol'), T0=(1.0,"K"), Tmin=None, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+        elif isinstance(other,KineticsData):
+            return other*self
+        elif isinstance(other,float):
+            Arrhenius(A=self.A*other,n=self.n,Ea=(self.Ea.value_si,'J/mol'),T0=(1.0,"K"), Tmin=None, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+        else:
+            raise TypeError('Unrecognized type in Arrhenius multiplication {0}'.format(type(other)))
+    
+    def __add__(self,other):
+        if isinstance(other,PdepKineticsModel):
+            raise TypeError('addition of non-pdep and pdep kinetics not supported')
+        elif isinstance(other,KineticsData):
+            return other+self
+        elif isinstance(other,Arrhenius):
+            Tdata = numpy.linspace(min(self.Tmin,other.Tmin),max(self.Tmax,other.Tmax),30)
+            kdata = numpy.array([self.getRateCoefficient(T)+other.getRateCoefficient(T) for T in Tdata])
+            arr = Arrhenius(T0=(1.0,"K"), Tmin=None, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+            arr.fitToData(Tdata,kdata,self.A.units)
+            return arr
+        else:
+            raise TypeError('Unrecognized type in Arrhenius addition {0}'.format(type(other)))
+    
+    def __sub__(self,other):
+        if isinstance(other,PdepKineticsModel):
+            raise TypeError('subtraction of non-pdep and pdep kinetics not supported')
+        elif isinstance(other,KineticsData):
+            return self+other*(-1)
+        elif isinstance(other,Arrhenius):
+            Tdata = numpy.linspace(min(self.Tmin,other.Tmin),max(self.Tmax,other.Tmax),30)
+            kdata = numpy.array([self.getRateCoefficient(T)-other.getRateCoefficient(T) for T in Tdata])
+            arr = Arrhenius(T0=(1.0,"K"), Tmin=None, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+            arr.fitToData(Tdata,kdata,self.A.units)
+            return arr
+        else:
+            raise TypeError('Unrecognized type in Arrhenius subtraction {0}'.format(type(other)))
+    
     cpdef double getRateCoefficient(self, double T, double P=0.0) except -1:
         """
         Return the rate coefficient in the appropriate combination of m^3, 
