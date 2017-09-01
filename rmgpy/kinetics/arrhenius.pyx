@@ -812,7 +812,17 @@ cdef class MultiPDepArrhenius(PDepKineticsModel):
         A helper function used when pickling an MultiPDepArrhenius object.
         """
         return (MultiPDepArrhenius, (self.arrhenius, self.Tmin, self.Tmax, self.Pmin, self.Pmax, self.comment))
-
+    
+    def __mul__(other,self):
+        return self*other
+    
+    def __mul__(self,other):
+        if isinstance(other,KineticsModel) and not isinstance(other,MultiArrhenius):
+            arrs = [other*arr for arr in self.arrhenius]
+            return MultiArrhenius(arrs, Tmin=None, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+        else:
+            raise TypeError('Unrecognized type in MultiArrhenius multiplication {0}'.format(type(other)))
+    
     cpdef double getRateCoefficient(self, double T, double P=0.0) except -1:
         """
         Return the rate coefficient in the appropriate combination of m^3, 
