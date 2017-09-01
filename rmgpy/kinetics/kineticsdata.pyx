@@ -32,7 +32,9 @@ from libc.math cimport exp, log, sqrt, log10
 
 cimport rmgpy.constants as constants
 import rmgpy.quantity as quantity
-
+from scipy.optimize import curve_fit
+from arrhenius import Arrhenius
+from model import PdepKineticsModel, KineticsModel
 ################################################################################
 
 cdef class KineticsData(KineticsModel):
@@ -92,7 +94,52 @@ cdef class KineticsData(KineticsModel):
             return self._kdata
         def __set__(self, value):
             self._kdata = quantity.RateCoefficient(value)
-
+    
+    def __mul__(other,self):
+        return self*other
+    
+    def __mul__(self,other):
+        if isinstance(other,PdepKineticsModel):
+            raise TypeError, 'multiplication of non-pdep and pdep kinetics not supported'
+        elif isinstance(other,KineticsModel):
+            kdata = [self.kdata[i]*other.getRateCoefficient(self.Tdata[i]) for i in xrange(self.kdata)]
+            return KineticsData(Tdata=self.Tdata,kdata=kdata)
+        elif isinstance(other,float):
+            kdata = self.kdata*other
+            return KineticsData(Tdata=self.Tdata, kdata=kdata, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+        else:
+            raise TypeError('Unrecognized type in KineticsData multiplication {0}'.format(type(other)))
+    
+    def __add__(self,other):
+        if isinstance(other,PdepKineticsModel):
+            raise TypeError('addition of non-pdep and pdep kinetics not supported')
+        elif isinstance(other,KineticsModel):
+            kdata = [self.kdata[i]+other.getRateCoefficient(self.Tdata[i]) for i in xrange(self.kdata)]
+            return KineticsData(Tdata=self.Tdata, kdata=kdata, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+        else:
+            raise TypeError('Unrecognized type in KineticsData addition {0}'.format(type(other)))
+    
+    def __sub__(self,other):
+        if isinstance(other,PdepKineticsModel):
+            raise TypeError('subtraction of non-pdep and pdep kinetics not supported')
+        elif isinstance(other,KineticsModel):
+            kdata = [self.kdata[i]-other.getRateCoefficient(self.Tdata[i]) for i in xrange(self.kdata)]
+            return KineticsData(Tdata=self.Tdata, kdata=kdata, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+        else:
+            raise TypeError('Unrecognized type in KineticsData subtraction {0}'.format(type(other)))
+    
+    def __pow__(self,other,q):
+        kdata = numpy.array(self.kdata)**other
+        return KineticsData(Tdata=self.Tdata, kdata=kdata, Tmin=self.Tmin, Tmax=self.Tmax, Pmin=self.Pmin, Pmax=self.Pmax, comment='')
+        
+    def fitToArrhenius(self):
+        """
+        fits the kinetics data to an Arrhenius expression
+        """
+        arr = Arrhenius()
+        arr.fitToData(self.Tdata,self.kdata,self.kdata.units)
+        return arr
+    
     cpdef double getRateCoefficient(self, double T, double P=0.0) except -1:
         """
         Return the rate coefficient in the appropriate combination of m^3, 
