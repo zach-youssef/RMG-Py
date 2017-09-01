@@ -398,7 +398,28 @@ cdef class ArrheniusEP(KineticsModel):
             return self._E0
         def __set__(self, value):
             self._E0 = quantity.Energy(value)
-
+    
+    def __pow__(self,other,q):
+        arr = ArrheniusEP(A=self.A**other,n=self.n*other,alpha=self.alpha*other,E0=(self.E0.value_si*other,'J/mol'),T0=(1.0,"K"), Tmin=None, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+        return arr
+    
+    def __mul__(other,self):
+        return self*other
+    
+    def __mul__(self,other):
+        if isinstance(other,PdepKineticsModel):
+            raise TypeError('multiplication of non-pdep and pdep kinetics not supported')
+        elif isinstance(other,Arrhenius):
+             return Arrhenius(A=self.A*other.A, n=self.n+other.n, alpha=self.alpha, E0=(self.E0.value_si+other.Ea.value_si,'J/mol'), T0=(1.0,"K"), Tmin=None, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+        elif isinstance(other,KineticsData):
+            return other*self
+        elif isinstance(other,float):
+            Arrhenius(A=self.A*other,n=self.n,Ea=(self.Ea.value_si,'J/mol'),T0=(1.0,"K"), Tmin=None, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+        elif isinstance(other,ArrheniusEP):
+            return ArrheniusEP(A=self.A*other.A,n=self.n+other.n,alpha=self.alpha+other.alpha,E0=(self.E0.value_si+other.E0.value_si,'J/mol'),T0=(1.0,"K"), Tmin=None, Tmin=min(self.Tmin,other.Tmin), Tmax=min(self.Tmax,other.Tmax), Pmin=min(self.Pmin,other.Pmin), Pmax=min(self.Pmax,other.Pmax), comment='')
+        else:
+            raise TypeError('Unrecognized type in Arrhenius multiplication {0}'.format(type(other)))
+            
     cpdef double getRateCoefficient(self, double T, double dHrxn=0.0) except -1:
         """
         Return the rate coefficient in the appropriate combination of m^3, 
