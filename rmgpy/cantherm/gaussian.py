@@ -30,6 +30,7 @@
 
 import math
 import numpy
+import re
 import os.path
 from rmgpy.cantherm.common import checkConformerEnergy
 import rmgpy.constants as constants
@@ -344,7 +345,9 @@ class GaussianLog:
 
         optfreq = False
         rigidScan=False
-
+        
+        scfdregx = re.compile('[=][.\w\s\-]')
+        
         # The array of potentials at each scan angle
         Vlist = []
 
@@ -363,10 +366,12 @@ class GaussianLog:
             # The lines containing "SCF Done" give the energy at each
             # iteration (even the intermediate ones)
             if 'SCF Done:' in line:
-                E = float(line.split()[4])
+                s = re.findall(scfdregx,line)
+                E = float(s[0][1:])
                 #rigid scans will only not optimize, so just append every time it finds an energy.
                 if rigidScan:
                     Vlist.append(E)
+
             # We want to keep the values of E that come most recently before
             # the line containing "Optimization completed", since it refers
             # to the optimized geometry
