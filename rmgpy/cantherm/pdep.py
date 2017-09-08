@@ -227,6 +227,13 @@ class PressureDependenceJob(object):
         for config in self.network.isomers + self.network.reactants + self.network.products:
             for spec in config.species:
                 assert spec.conformer.E0 is not None, 'species {0} is missing energy for its conformer'.format(spec.label)
+
+        # set transition state Energy if not set previously using same method as RMG pdep
+        for reaction in self.network.pathReactions:
+            transitionState = reaction.transitionState
+            if transitionState.conformer and transitionState.conformer.E0 is None:
+                transitionState.conformer.E0 = (sum([spec.conformer.E0.value_si for spec in reaction.reactants]) + reaction.kinetics.Ea.value_si,"J/mol")
+
         self.network.printSummary()
         
         if outputFile is not None:
