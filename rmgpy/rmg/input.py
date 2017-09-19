@@ -36,10 +36,11 @@ import numpy
 from rmgpy import settings
 
 from rmgpy.molecule import Molecule
-from rmgpy.quantity import Quantity
+from rmgpy.quantity import Quantity, RateCoefficient
 from rmgpy.solver.base import TerminationTime, TerminationConversion
 from rmgpy.solver.simple import SimpleReactor
 from rmgpy.solver.liquid import LiquidReactor
+from rmgpy.solver.mbSampled import MBSampledReactor
 from rmgpy.rmg.settings import ModelSettings, SimulatorSettings
 from model import CoreEdgeReactionModel
 
@@ -219,7 +220,70 @@ def liquidReactor(temperature,
             
     system = LiquidReactor(T, initialConcentrations, termination, sensitiveSpecies, sensitivityThreshold,constantSpecies)
     rmg.reactionSystems.append(system)
-    
+
+
+# Reaction systems
+def mbsampledReactor(temperature,
+                  pressure,
+                  initialMoleFractions,
+                  mbsamplingRate,
+                  terminationConversion=None,
+                  terminationTime=None,
+                  sensitivity=None,
+                  sensitivityThreshold=1e-3,
+                  constantSpecies=None,
+                  ):
+    logging.debug('Found MBSampledReactor reaction system')
+
+    for value in initialMoleFractions.values():
+        if value < 0:
+            raise InputError('Initial mole fractions cannot be negative.')
+
+    for spec in initialMoleFractions:
+        initialMoleFractions[spec] = float(initialMoleFractions[spec])
+
+    totalInitialMoles = sum(initialMoleFractions.values())
+    if totalInitialMoles != 1:
+        logging.warning('Initial mole fractions do not sum to one; normalizing.')
+        logging.info('')
+        logging.info('Original composition:')
+        for spec, molfrac in initialMoleFractions.iteritems():
+            logging.info("{0} = {1}".format(spec, molfrac))
+        for spec in initialMoleFractions:
+            initialMoleFractions[spec] /= totalInitialMoles
+        logging.info('')
+        logging.info('Normalized mole fractions:')
+        for spec, molfrac in initialMoleFractions.iteritems():
+            logging.info("{0} = {1}".format(spec, molfrac))
+
+    T = Quantity(temperature)
+    P = Quantity(pressure)
+
+    k_sampling = RateCoefficient(mbsamplingRate, 's^-1')
+
+    constantSpeciesList = []
+
+    for spec in constantSpecies:
+        constantSpeciesList.append(speciesDict[spec])
+
+    termination = []
+    if terminationConversion is not None:
+        for spec, conv in terminationConversion.iteritems():
+            termination.append(TerminationConversion(speciesDict[spec], conv))
+    if terminationTime is not None:
+        termination.append(TerminationTime(Quantity(terminationTime)))
+    if len(termination) == 0:
+        raise InputError(
+            'No termination conditions specified for reaction system #{0}.'.format(len(rmg.reactionSystems) + 2))
+
+    sensitiveSpecies = []
+    if sensitivity:
+        if isinstance(sensitivity, str): sensitivity = [sensitivity]
+        for spec in sensitivity:
+            sensitiveSpecies.append(speciesDict[spec])
+    system = MBSampledReactor(T, P, initialMoleFractions, k_sampling, constantSpeciesList, termination, sensitiveSpecies, sensitivityThreshold)
+    rmg.reactionSystems.append(system)
+
 def simulator(atol, rtol, sens_atol=1e-6, sens_rtol=1e-4):
     rmg.simulatorSettingsList.append(SimulatorSettings(atol, rtol, sens_atol, sens_rtol))
     
@@ -427,6 +491,7 @@ def readInputFile(path, rmg0):
         'adjacencyList': adjacencyList,
         'simpleReactor': simpleReactor,
         'liquidReactor': liquidReactor,
+        'mbsampledReactor': mbsampledReactor,
         'simulator': simulator,
         'solvation': solvation,
         'model': model,

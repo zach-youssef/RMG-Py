@@ -37,6 +37,7 @@ import os.path
 
 from rmgpy.chemkin import loadChemkinFile
 from rmgpy.solver.liquid import LiquidReactor
+from rmgpy.solver.mbSampled import MBSampledReactor
 from rmgpy.solver.base import TerminationConversion
 
 def loadRMGJob(inputFile, chemkinFile=None, speciesDict=None, generateImages=True, useJava=False, useChemkinNames=False):
@@ -68,7 +69,30 @@ def loadRMGPyJob(inputFile, chemkinFile=None, speciesDict=None, generateImages=T
     if not speciesDict:
         speciesDict = os.path.join(os.path.dirname(inputFile), 'chemkin', 'species_dictionary.txt')
     speciesList, reactionList = loadChemkinFile(chemkinFile, speciesDict, useChemkinNames=useChemkinNames)
-    
+
+    # Created "observed" versions of all reactive species that are not explicitly
+    #identified as  "constant" species
+
+    for reactionSystem in rmg.reactionSystems:
+
+        if isinstance(reactionSystem, MBSampledReactor):
+
+            observedspeciesList = []
+
+            for species in speciesList:
+
+                if species.reactive:
+                    for constantSpecies in reactionSystem.constantSpeciesList:
+                        if species.isIsomorphic(constantSpecies):
+                            break
+
+                    else:
+                        observedspecies = species.copy(deep=True)
+                        observedspecies.label = species.label + '_obs'
+                        observedspeciesList.append(observedspecies)
+
+            speciesList.extend(observedspeciesList)
+
     # Map species in input file to corresponding species in Chemkin file
     speciesDict = {}
     for spec0 in rmg.initialSpecies:
@@ -102,7 +126,7 @@ def loadRMGPyJob(inputFile, chemkinFile=None, speciesDict=None, generateImages=T
             if isinstance(t, TerminationConversion):
                 t.species = speciesDict[t.species]
         reactionSystem.sensitiveSpecies = [speciesDict[spec] for spec in reactionSystem.sensitiveSpecies]
-    
+
     # Set reaction model to match model loaded from Chemkin file
     rmg.reactionModel.core.species = speciesList
     rmg.reactionModel.core.reactions = reactionList
