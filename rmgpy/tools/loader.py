@@ -81,15 +81,20 @@ def loadRMGPyJob(inputFile, chemkinFile=None, speciesDict=None, generateImages=T
 
             for species in speciesList:
 
-                if species.reactive:
-                    for constantSpecies in reactionSystem.constantSpeciesList:
-                        if species.isIsomorphic(constantSpecies):
-                            break
+                if '_obs' not in species.label:
+                    if species.reactive:
+                        for constantSpecies in reactionSystem.constantSpeciesList:
+                            if species.isIsomorphic(constantSpecies):
+                                break
 
-                    else:
-                        observedspecies = species.copy(deep=True)
-                        observedspecies.label = species.label + '_obs'
-                        observedspeciesList.append(observedspecies)
+                        else:
+                            for species2 in speciesList:
+                                if species2.label == species.label + '_obs':
+                                    break
+                            else:
+                                observedspecies = species.copy(deep=True)
+                                observedspecies.label = species.label + '_obs'
+                                observedspeciesList.append(observedspecies)
 
             speciesList.extend(observedspeciesList)
 
