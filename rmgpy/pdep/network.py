@@ -74,6 +74,11 @@ class Network:
     `activeKRotor`          ``True`` if the K-rotor is treated as active, ``False`` if treated as adiabatic
     `activeJRotor`          ``True`` if the J-rotor is treated as active, ``False`` if treated as adiabatic
     `rmgmode`               ``True`` if in RMG mode, ``False`` otherwise
+    ----------------------- ----------------------------------------------------
+    `eqRatios`              An array containing concentration of each isomer and reactant channel present at equilibrium
+    `collFreq`              An array of the frequency of collision between
+    `Mcoll`                 Matrix of first-order rate coefficients for collisional population transfer between grains for each isomer
+    `densStates`            3D np array of stable configurations, number of grains, and number of J
     ======================= ====================================================
     
     """
