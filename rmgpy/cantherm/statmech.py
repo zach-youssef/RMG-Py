@@ -331,7 +331,7 @@ class StatMechJob:
                 E0 = E0 * constants.E_h * constants.Na         # Hartree/particle to J/mol
             E0 = applyEnergyCorrections(E0, self.modelChemistry, atoms, bonds if self.applyBondEnergyCorrections else {})
             ZPE = statmechLog.loadZeroPointEnergy() * self.frequencyScaleFactor
-
+            logging.debug('Corrected minimum energy is {0} J/mol'.format(E0))
             # The E0_withZPE at this stage contains the ZPE
             E0_withZPE = E0 + ZPE
 
