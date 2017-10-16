@@ -256,7 +256,7 @@ class Network:
                 elif method.lower() == 'chemically-significant eigenvalues':
                     self.applyChemicallySignificantEigenvaluesMethod()
                 else:
-                    raise NetworkError('Unknown method "{0}".'.format(method))
+                    raise NetworkError('Unknown method "{0}". Valid options are "modified strong collision", "reservoir state", or "chemically-significant eigenvalues"'.format(method))
 
                 K[t,p,:,:] = self.K
                 

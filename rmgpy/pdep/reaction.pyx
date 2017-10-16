@@ -214,6 +214,8 @@ def applyRRKMTheory(transitionState,
         if conf.sumStates[r] > 0:
             E0 = conf.Elist[r]
             break
+    else:
+        raise ValueError('Did not find a positive conformer sum of states for transition state {0}'.format(transitionState))
     conf.Elist -= E0
     
     sumStates = conf.mapSumOfStates(Elist - E0, Jlist)
