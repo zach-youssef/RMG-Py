@@ -1087,11 +1087,8 @@ class Group(Graph):
                 old_atom_type_str = str([k.label for k in old_atom_type])
             else:
                 old_atom_type_str = str(old_atom_type[0])
-            
-            assert type(old_atom_type_str) == str
-            assert type(item.label) == str
-            grps.append((grp,grpc,basename+'_'+old_atom_type_str+'->'+item.label,'atomExt'))
 
+            grps.append((grp,grpc,basename+'_'+old_atom_type_str+'->'+item.label,'atomExt'))
         
         return grps
     
