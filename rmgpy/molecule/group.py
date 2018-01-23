@@ -1016,7 +1016,7 @@ class Group(Graph):
         return molecules
                 
                                
-    def getExtensions(self,R=None):
+    def getExtensions(self,R=None,basename=''):
         """
         generate all allowed group extensions and their complements
         note all atomtypes except for elements and R/R!H's must be removed
@@ -1043,29 +1043,29 @@ class Group(Graph):
             typ = atm.atomType
             if len(typ) == 1:
                 if typ[0].label == 'R':
-                    extents.extend(self.specifyAtomExtensions(i,R)) #specify types of atoms
+                    extents.extend(self.specifyAtomExtensions(i,basename,R)) #specify types of atoms
                 elif typ[0].label == 'R!H':
-                    extents.extend(self.specifyAtomExtensions(i,RnH))
+                    extents.extend(self.specifyAtomExtensions(i,basename,RnH))
             else:
-                extents.extend(self.specifyAtomExtensions(i,typ))
+                extents.extend(self.specifyAtomExtensions(i,basename,typ))
             if len(atm.radicalElectrons) != 1:
                 if len(atm.radicalElectrons) == 0:
-                    extents.extend(self.specifyUnpairedExtensions(i,Run))
+                    extents.extend(self.specifyUnpairedExtensions(i,basename,Run))
                 else:
-                    extents.extend(self.specifyUnpairedExtensions(i,atm.radicalElectrons))
+                    extents.extend(self.specifyUnpairedExtensions(i,basename,atm.radicalElectrons))
             
-            extents.extend(self.specifyExternalNewBondExtensions(i,Rbonds))
+            extents.extend(self.specifyExternalNewBondExtensions(i,basename,Rbonds))
             for j,atm2 in enumerate(atoms):
                 if j<i and not self.hasBond(atm,atm2):
-                    extents.extend(self.specifyInternalNewBondExtensions(i,j,Rbonds))
+                    extents.extend(self.specifyInternalNewBondExtensions(i,j,basename,Rbonds))
                 if self.hasBond(atm,atm2):
                     bd = self.getBond(atm,atm2)
                     if len(bd.order) > 1:
-                        extents.extend(self.specifyBondExtensions(i,j,bd.order))
+                        extents.extend(self.specifyBondExtensions(i,j,basename,bd.order))
             
         return extents
     
-    def specifyAtomExtensions(self,i,R):
+    def specifyAtomExtensions(self,i,basename,R):
         """
         generates extensions for specification of the type of atom defined by a given atomtype
         or set of atomtypes
@@ -1078,13 +1078,24 @@ class Group(Graph):
         for item in R:
             grp = deepcopy(self)
             grpc = deepcopy(self)
+            old_atom_type = grp.atoms[i].atomType
             grp.atoms[i].atomType = [item]
             grpc.atoms[i].atomType = list(Rset-{item})
-            grps.append([grp,grpc])
+            
+            
+            if len(old_atom_type ) > 1:
+                old_atom_type_str = str([k.label for k in old_atom_type])
+            else:
+                old_atom_type_str = str(old_atom_type[0])
+            
+            assert type(old_atom_type_str) == str
+            assert type(item.label) == str
+            grps.append((grp,grpc,basename+'_'+old_atom_type_str+'->'+item.label,'atomExt'))
+
         
         return grps
     
-    def specifyUnpairedExtensions(self,i,Run):
+    def specifyUnpairedExtensions(self,i,basename,Run):
         """
         generates extensions for specification of the number of electrons on a given atom
         """
@@ -1097,11 +1108,11 @@ class Group(Graph):
             grpc = deepcopy(self)
             grp.atoms[i].radicalElectrons = [item]
             grpc.atoms[i].radicalElectrons = list(Rset-{item})
-            grps.append([grp,grpc])
+            grps.append((grp,grpc,basename+'_u'+str(item),'elExt'))
         
         return grps
     
-    def specifyInternalNewBondExtensions(self,i,j,Rbonds):
+    def specifyInternalNewBondExtensions(self,i,j,basename,Rbonds):
         """
         generates extensions for creation of a bond (of undefined order)
         between two atoms indexed i,j that already exist in the group and are unbonded
@@ -1111,9 +1122,9 @@ class Group(Graph):
         newgrp = deepcopy(self)
         newgrp.addBond(GroupBond(newgrp.atoms[i],newgrp.atoms[j],Rbonds))
         
-        return [[newgrp]]
+        return [(newgrp,None,basename+'_'+newgrp.atoms[i].label+'-'+newgrp.atoms[j].label,'intNewBondExt')]
     
-    def specifyExternalNewBondExtensions(self,i,Rbonds):
+    def specifyExternalNewBondExtensions(self,i,basename,Rbonds):
         """
         generates extensions for the creation of a bond (of undefined order) between
         an atom and a new atom that is not H
@@ -1126,21 +1137,23 @@ class Group(Graph):
         j = newgrp.atoms.index(GA)
         newgrp.addBond(GroupBond(newgrp.atoms[i],newgrp.atoms[j],Rbonds))
         
-        return [[newgrp]]
+        return [(newgrp,None,basename+'_NEW-'+newgrp.atoms[i].label+'-R','extNewBondExt')]
     
-    def specifyBondExtensions(self,i,j,Rbonds):
+    def specifyBondExtensions(self,i,j,basename,Rbonds):
         """
         generates extensions for the specification of bond order for a given bond
         """
         cython.declare(grps=list,Rbset=set,bd=float,grp=Group,grpc=Group)
         grps = []
         Rbset = set(Rbonds)
+        bdict = {1:'-',2:'=',3:'#',1.5:'-='}
         for bd in Rbonds:
             grp = deepcopy(self)
             grpc = deepcopy(self)
             grp.atoms[i].bonds[grp.atoms[j]].order = [bd]
             grpc.atoms[i].bonds[grpc.atoms[j]].order = list(Rbset-{bd})
-            grps.append([grp,grpc])
+            
+            grps.append((grp,grpc,basename+'_Spec-'+grp.atoms[i].label+bdict[bd]+grp.atoms[j].label,'bondExt'))
         
         return grps
 
