@@ -1025,6 +1025,8 @@ class Group(Graph):
                        extents=list,RnH=list,typ=list)
         
         extents = []
+        
+        Nsplits = len(self.split())
         #generate appropriate R and R!H
         if R is None:
             R = ['H','C','N','O','Si','S'] #set of possible R elements/atoms
@@ -1057,7 +1059,7 @@ class Group(Graph):
             extents.extend(self.specifyExternalNewBondExtensions(i,basename,Rbonds))
             for j,atm2 in enumerate(atoms):
                 if j<i and not self.hasBond(atm,atm2):
-                    extents.extend(self.specifyInternalNewBondExtensions(i,j,basename,Rbonds))
+                    extents.extend(self.specifyInternalNewBondExtensions(i,j,Nsplits,basename,Rbonds))
                 if self.hasBond(atm,atm2):
                     bd = self.getBond(atm,atm2)
                     if len(bd.order) > 1:
@@ -1121,7 +1123,7 @@ class Group(Graph):
         
         return grps
     
-    def specifyInternalNewBondExtensions(self,i,j,basename,Rbonds):
+    def specifyInternalNewBondExtensions(self,i,j,Nsplits,basename,Rbonds):
         """
         generates extensions for creation of a bond (of undefined order)
         between two atoms indexed i,j that already exist in the group and are unbonded
