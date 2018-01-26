@@ -2235,7 +2235,22 @@ class KineticsFamily(Database):
             else:
                 comp.append(kinetics[i])
         
-        return new,comp,newInds
+        return new,comp,newInds    
+    
+    def evalExt(self,parent,ext,extname,vec=np.array([1.0,0.0,0.0,0.0])):
+        """
+        evaluates an appropriate linear combination of the objective functions defined by vec
+        for the extension ext with name extname to the parent entry parent
+        """
+        rxns = self.getEntriesReactions(parent.label)
+        new,old,newInds = self.splitReactions(rxns,parent.label,ext)
+        if len(new) == 0:
+            return np.inf,False
+        elif len(old) == 0:
+            return np.inf,True
+        else:
+            objs,boo = getObjectiveFunctions(new,old)
+            return objs.dot(vec),True
         
     def retrieveOriginalEntry(self, templateLabel):
         """
