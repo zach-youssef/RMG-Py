@@ -2201,6 +2201,41 @@ class KineticsFamily(Database):
         associated with a given template
         """
         return [entry.data for entry in self.rules.entries[template]]
+    
+    def splitReactions(self,rxns,oldlabel,newgrp):
+        """
+        divides the reactions in rxns between the new
+        group structure newgrp and the old structure with 
+        label oldlabel
+        returns a list of reactions associated with the new group
+        the list of reactions associated with the old group
+        and a list of the indices of all of the reactions
+        associated with the new group
+        """
+        new = []
+        comp = []
+        newInds = []
+        kinetics = self.getTemplateKinetics(oldlabel)
+        oldgrp = self.groups.entries[oldlabel].item
+        
+        for i,rxn in enumerate(rxns):
+            rmol = rxn.reactants[0].molecule[0]
+            for reactant in rxn.reactants[1:]:
+                rmol.merge(reactant.molecule[0])
+            if not rmol.labeledIsSubgraphIsomorphic(oldgrp):
+                rmol = rxn.products[0].molecule[0]
+                for product in rxn.products[1:]:
+                    rmol.merge(product.molecule[0])
+                if not rmol.labeledIsSubgraphIsomorphic(oldgrp):
+                    raise ValueError, 'cant work out training reaction direction'
+    
+            if rmol.labeledIsSubgraphIsomorphic(newgrp):
+                new.append(kinetics[i])
+                newInds.append(i)
+            else:
+                comp.append(kinetics[i])
+        
+        return new,comp,newInds
         
     def retrieveOriginalEntry(self, templateLabel):
         """
