@@ -2332,6 +2332,61 @@ class KineticsFamily(Database):
             
         return
     
+    def generateTree(self,vec=np.array([1.0,0.0,0.0,0.0]),thermoDatabase=None):
+        """
+        Generate a tree by greedy optimization based on a linear combination of 
+        objective functions defined by vec
+        the optimization is done by iterating through every group and if the group has
+        more than one training reaction associated with it a set of potential more specific extensions 
+        are generated and the extension that optimizing the objective function combination is chosen 
+        and the iteration starts over at the beginning
+        
+        additionally the tree structure is simplified on the fly by removing groups that have no kinetics data associated
+        if their parent has no kinetics data associated and they either have only one child or
+        have two children one of which has no kinetics data and no children
+        (its parent becomes the parent of its only relevant child node)
+        """
+        boo = True
+        while boo:
+            for entry in self.groups.entries.itervalues():
+                if entry.index != -1 and len(self.rules.entries[entry.label])>1:
+                    self.extendNode(entry,thermoDatabase,vec)
+                    break
+                elif entry.parent is None or entry.parent.parent is None:
+                    pass
+                elif len(self.rules.entries[entry.parent.label])>0 or len(self.rules.entries[entry.label])>0:
+                    pass
+                elif len(entry.parent.children) == 1:
+                    label = entry.parent.label
+                    entry.parent = entry.parent.parent
+                    entry.parent.children.append(entry)
+                    del self.groups.entries[label]   
+                    del self.rules.entries[label]
+                elif len(entry.parent.children) == 2: 
+                    child = [c for c in entry.parent.children if c != entry][0]
+                    if len(self.rules.entries[child.label]) == 0 and len(child.children) == 0:
+                        label = entry.parent.label
+                        entry.parent.parent.children.remove(entry.parent)
+                        entry.parent.parent.children.append(entry)
+                        entry.parent = entry.parent.parent
+                        del self.groups.entries[label]   
+                        del self.rules.entries[label]
+                        clabel = child.label
+                        del self.groups.entries[clabel]
+                        del self.rules.entries[clabel]
+                
+            else:
+                boo = False
+            
+            #fix indicies
+            iters = 0
+            for entry in self.groups.entries.itervalues():
+                if entry.index != -1:
+                    entry.index = iters
+                    iters += 1
+        
+        return
+    
     def retrieveOriginalEntry(self, templateLabel):
         """
         Retrieves the original entry, be it a rule or training reaction, given
