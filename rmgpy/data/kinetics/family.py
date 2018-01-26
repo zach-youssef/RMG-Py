@@ -2251,7 +2251,87 @@ class KineticsFamily(Database):
         else:
             objs,boo = getObjectiveFunctions(new,old)
             return objs.dot(vec),True
+
+    
+    def extendNode(self,parent,thermoDatabase=None,vec=np.array([1.0,0.0,0.0,0.0])):
+        """
+        Constructs an extension to the group parent based on evaluation of the linear
+        combination of the objective functions defined by vec
+        """
+        type_order = ['intNewBondExt','atomExt','bondExt','extNewBondExt','elExt']
+        pgrp = parent.item
+        exts = pgrp.getExtensions(basename=parent.label)
+        vals = []
+        matchedExtension = []
+        for grp,grpc,name,typ in exts:
+            val,boo = self.evalExt(parent,grp,name,vec)
+            matchedExtension.append(boo)
+            ind = type_order.index(typ)
+            vals.append(val) 
+            
+        min_val = min(vals)
         
+        inds = [i for i in xrange(len(vals)) if vals[i]==min_val]
+    
+        newvals = []
+        
+        for ind in inds:
+            if matchedExtension[ind]:
+                newvals.append(type_order.index(exts[ind][-1]))
+            else:
+                newvals.append(np.inf)
+        
+        min_newval = min(newvals)
+    
+        min_ind = newvals.index(min_newval)
+        
+        if (vals[inds[min_ind]] == np.inf and matchedExtension[inds[min_ind]] == False):
+            while any([exts[inds[min_ind]][0].isLabeledSubgraphIsomorphic(k.item) for k in parent.children]):
+                min_ind = newvals[min_ind+1:].index(min_newval)+min_ind+1
+
+                
+        ext = exts[inds[min_ind]]
+        extname = ext[2]
+        self.addEntry(parent,ext[0],extname)
+        
+        complement = not ext[1] is None
+        
+        if complement:
+            frags = extname.split('_')
+            frags[-1] = 'N-'+frags[-1]
+            cextname = ''
+            for k in frags:
+                cextname += k
+                cextname += '_'
+            cextname = cextname[:-1]
+    
+            self.addEntry(parent,ext[1],cextname)
+        
+        rxns = self.getEntriesReactions(parent.label)
+        new,left,newInds = self.splitReactions(rxns,parent.label,ext[0])
+        
+        compEntries = []
+        newEntries = []
+
+        for i,entry in enumerate(self.rules.entries[parent.label]):
+            if i in newInds:
+                entry.label = extname
+                newEntries.append(entry)
+            else:
+                if complement:
+                    entry.label = cextname
+                compEntries.append(entry)
+        
+        self.rules.entries[extname] = newEntries
+        
+        if complement:
+            self.rules.entries[parent.label] = []
+            self.rules.entries[cextname] = compEntries
+        else:
+            self.rules.entries[parent.label] = compEntries
+            
+        return
+    
     def retrieveOriginalEntry(self, templateLabel):
         """
         Retrieves the original entry, be it a rule or training reaction, given
