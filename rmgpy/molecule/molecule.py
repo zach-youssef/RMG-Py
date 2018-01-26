@@ -1235,7 +1235,27 @@ class Molecule(Graph):
         # Do the isomorphism comparison
         result = Graph.findSubgraphIsomorphisms(self, other, initialMap)
         return result
+    
+    def labeledIsSubgraphIsomorphic(self,other):
+        """
+        Check that two labeled groups have a subgraph isomorphism that matches the labels
+        Note that this implementation requires two subgraph isomorphism operations
+        When the atoms being mapped are known to be subgraph isomorphic (such as in most RMG operations) 
+        one should use isSubgraphIsomorphic with the initialMap input instead
+        """
+        cython.declare(a=Atom,L=list,initialMap=dict)
 
+        initialMap = dict()
+        for atom in self.atoms:
+            if atom.label and atom.label != '':
+                L = [a for a in other.atoms if a.label == atom.label]
+                assert len(L) == 1, 'more than one label for {0} in {1}'.format(atom.label,other)
+                initialMap[atom] = L[0]
+        
+        #isSubgraphIsomorphic ignores the atoms in the initial map so we have to do it seperately without
+        #the map to confirm that the atoms in the initial map are subgraph-isomorphic
+        return self.isSubgraphIsomorphic(other,initialMap=initialMap) and self.isSubgraphIsomorphic(other) #necessary
+    
     def isAtomInCycle(self, atom):
         """
         Return :data:`True` if `atom` is in one or more cycles in the structure,
