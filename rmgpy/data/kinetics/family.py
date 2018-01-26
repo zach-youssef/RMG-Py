@@ -33,6 +33,7 @@ This module contains functionality for working with kinetics families.
 """
 
 import os.path
+import numpy as np
 import logging
 import codecs
 from copy import deepcopy
@@ -2400,3 +2401,34 @@ class KineticsFamily(Database):
             allGroups = all([isinstance(entry.item, Group) for entry in groupList])
 
         return groupList
+    
+def getKineticsData(kinetics,T=1000.0):
+    """
+    at temperature T
+    retrives the number of kinetics objects,
+    the total error in Ln(k) at using the 
+    the mean Ln(k)
+    the standard deviation of Ln(k)
+    """
+    N = len(kinetics)
+    data = np.array([np.log(k.getRateCoefficient(T)) for k in kinetics])
+    s = np.std(data)
+    mu = np.mean(data)
+    err = (data-mu).dot(data-mu)
+    return N,err,mu,s
+    
+def getObjectiveFunctions(kinetics1,kinetics2,T=1000.0):
+    """
+    Returns the value of four potential objective functions to minimize
+    Uncertainty = N1*std(Ln(k))_1 + N1*std(Ln(k))_1
+    Mean difference: -abs(mean(Ln(k))_1-mean(Ln(k))_2)
+    Error using mean: Err_1 + Err_2
+    Split: abs(N1-N2)
+    """
+    N1,err1,mu1,s1 = getKineticsData(kinetics1,T)
+    N2,err2,mu2,s2 = getKineticsData(kinetics2,T)
+    unc = N1*s1+N2*s2
+    dif = -abs(mu1-mu2)
+    err = err1+err2
+    split = abs(N1-N2)
+    return np.array([unc,dif,err,split]), N1 == 0
