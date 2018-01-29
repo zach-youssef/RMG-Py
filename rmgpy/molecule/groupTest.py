@@ -765,7 +765,46 @@ class TestGroup(unittest.TestCase):
             self.assertTrue(atom1 in self.group.atoms)
             self.assertTrue(atom2 in group.atoms)
             self.assertTrue(atom1.equivalent(atom2))
-    
+            
+    def testLabeledIsSubgraphIsomorphic(self):
+        """
+        Test the Group.labeledIsSubgraphIsomorphic() method
+        """
+        testGrp1 = Group().fromAdjacencyList("""
+1 *2 C u0 {2,[S,D]} 
+2 *1 C u[0,1] {1,[S,D]} {3,S} {4,S}
+3    R!H     u0 {2,S}
+4 *3 H u0 {2,S}
+            """)
+        testGrp2 = Group().fromAdjacencyList("""
+1 *2 C u0 {2,[S,D]} {4,S}
+2 *1 C u[0,1] {1,[S,D]} {3,S} {4,S}
+3    R!H     u0 {2,S} 
+4 *3 H u0 {2,S} {1,S}
+            """)
+        self.assertFalse(testGrp1.labeledIsSubgraphIsomorphic(testGrp2))
+        testGrp3 = Group().fromAdjacencyList("""
+1    C u0 {2,D} 
+2 *1 C u1 {1,D} {3,S} {4,S}
+3    S     u0 {2,S}
+4 *3 H u0 {2,S}
+            """)
+        self.assertRaises(AssertionError,testGrp1.labeledIsSubgraphIsomorphic,testGrp3)
+        testGrp4 = Group().fromAdjacencyList("""
+1 *2 C u0 {2,D} 
+2 *2 C u1 {1,D} {3,S} {4,S}
+3    S     u0 {2,S}
+4 *3 H u0 {2,S}
+            """)
+        self.assertRaises(AssertionError,testGrp1.labeledIsSubgraphIsomorphic,testGrp4)
+        testGrp5 = Group().fromAdjacencyList("""
+1 *2 C u0 {2,D} 
+2 *1 C u1 {1,D} {3,S} {4,S}
+3    S     u0 {2,S}
+4 *3 H u0 {2,S}
+            """)
+        self.assertTrue(testGrp5.labeledIsSubgraphIsomorphic(testGrp1))
+        
     def testGenerateExtensions(self):
         """
         test that appropriate group extensions are being generated
