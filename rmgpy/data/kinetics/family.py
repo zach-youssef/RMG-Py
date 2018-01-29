@@ -2361,10 +2361,12 @@ class KineticsFamily(Database):
                     pass
                 elif len(entry.parent.children) == 1:
                     label = entry.parent.label
+                    entry.parent.parent.children.remove(entry.parent)
                     entry.parent = entry.parent.parent
                     entry.parent.children.append(entry)
                     del self.groups.entries[label]   
                     del self.rules.entries[label]
+                    break
                 elif len(entry.parent.children) == 2: 
                     child = [c for c in entry.parent.children if c != entry][0]
                     if len(self.rules.entries[child.label]) == 0 and len(child.children) == 0:
@@ -2377,7 +2379,7 @@ class KineticsFamily(Database):
                         clabel = child.label
                         del self.groups.entries[clabel]
                         del self.rules.entries[clabel]
-                
+                        break
             else:
                 boo = False
             
