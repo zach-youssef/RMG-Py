@@ -2237,7 +2237,7 @@ class KineticsFamily(Database):
         
         return new,comp,newInds    
     
-    def evalExt(self,parent,ext,extname,vec=np.array([1.0,0.0,0.0,0.0])):
+    def evalExt(self,parent,ext,extname,obj=None):
         """
         evaluates an appropriate linear combination of the objective functions defined by vec
         for the extension ext with name extname to the parent entry parent
@@ -2249,11 +2249,14 @@ class KineticsFamily(Database):
         elif len(old) == 0:
             return np.inf,True
         else:
-            objs,boo = getObjectiveFunctions(new,old)
-            return objs.dot(vec),True
+            if obj:
+                ob,boo = getObjectiveFunction(new,old,obj)
+            else:
+                ob,boo = getObjectiveFunction(new,old)
+            return ob,True
 
     
-    def extendNode(self,parent,thermoDatabase=None,vec=np.array([1.0,0.0,0.0,0.0])):
+    def extendNode(self,parent,thermoDatabase=None,obj=None):
         """
         Constructs an extension to the group parent based on evaluation of the linear
         combination of the objective functions defined by vec
@@ -2264,7 +2267,7 @@ class KineticsFamily(Database):
         vals = []
         matchedExtension = []
         for grp,grpc,name,typ in exts:
-            val,boo = self.evalExt(parent,grp,name,vec)
+            val,boo = self.evalExt(parent,grp,name,obj)
             matchedExtension.append(boo)
             ind = type_order.index(typ)
             vals.append(val) 
@@ -2332,7 +2335,7 @@ class KineticsFamily(Database):
             
         return
     
-    def generateTree(self,vec=np.array([1.0,0.0,0.0,0.0]),thermoDatabase=None):
+    def generateTree(self,obj=None,thermoDatabase=None):
         """
         Generate a tree by greedy optimization based on a linear combination of 
         objective functions defined by vec
@@ -2350,7 +2353,7 @@ class KineticsFamily(Database):
         while boo:
             for entry in self.groups.entries.itervalues():
                 if entry.index != -1 and len(self.rules.entries[entry.label])>1:
-                    self.extendNode(entry,thermoDatabase,vec)
+                    self.extendNode(entry,thermoDatabase,obj)
                     break
                 elif entry.parent is None or entry.parent.parent is None:
                     pass
@@ -2619,23 +2622,11 @@ class KineticsFamily(Database):
             allGroups = all([isinstance(entry.item, Group) for entry in groupList])
 
         return groupList
-    
-def getKineticsData(kinetics,T=1000.0):
-    """
-    at temperature T
-    retrives the number of kinetics objects,
-    the total error in Ln(k) at using the 
-    the mean Ln(k)
-    the standard deviation of Ln(k)
-    """
-    N = len(kinetics)
-    data = np.array([np.log(k.getRateCoefficient(T)) for k in kinetics])
-    s = np.std(data)
-    mu = np.mean(data)
-    err = (data-mu).dot(data-mu)
-    return N,err,mu,s
-    
-def getObjectiveFunctions(kinetics1,kinetics2,T=1000.0):
+
+def informationGain(ks1,ks2):
+    return len(ks1)*np.std(ks1)+len(ks2)*np.std(ks2)
+ 
+def getObjectiveFunction(kinetics1,kinetics2,obj=informationGain,T=1000.0):
     """
     Returns the value of four potential objective functions to minimize
     Uncertainty = N1*std(Ln(k))_1 + N1*std(Ln(k))_1
@@ -2643,10 +2634,9 @@ def getObjectiveFunctions(kinetics1,kinetics2,T=1000.0):
     Error using mean: Err_1 + Err_2
     Split: abs(N1-N2)
     """
-    N1,err1,mu1,s1 = getKineticsData(kinetics1,T)
-    N2,err2,mu2,s2 = getKineticsData(kinetics2,T)
-    unc = N1*s1+N2*s2
-    dif = -abs(mu1-mu2)
-    err = err1+err2
-    split = abs(N1-N2)
-    return np.array([unc,dif,err,split]), N1 == 0
+    ks1 = np.array([np.log(k.getRateCoefficient(T)) for k in kinetics1])
+    ks2 = np.array([np.log(k.getRateCoefficient(T)) for k in kinetics2])
+    N1 = len(ks1)
+    
+    return obj(ks1,ks2), N1 == 0
+
