@@ -2180,7 +2180,8 @@ class KineticsFamily(Database):
         entry = Entry(index=ind,label=name,item=grp,parent=parent)
         self.groups.entries[name] = entry
         self.rules.entries[name] = []
-        entry.parent.children.append(entry)
+        if entry.parent:
+            entry.parent.children.append(entry)
     
     def getEntriesReactions(self,template):
         """
