@@ -30,6 +30,7 @@ import mock
 import os.path
 import shutil
 import unittest
+import numpy as np
 
 from rmgpy import settings
 from rmgpy.data.kinetics.database import KineticsDatabase
@@ -578,7 +579,79 @@ multiplicity 2
         finally:
             shutil.rmtree(os.path.join(settings['test_data.directory'], 'testing_database/kinetics/families/intra_H_copy'))
 
+class TestTreeGeneration(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        """
+        A function run ONCE before all unit tests in this class.
+        """
+        # Set up a dummy database
+        cls.database = KineticsDatabase()
+        cls.database.loadFamilies(
+            path=os.path.join(settings['test_data.directory'], 'testing_database/kinetics/families'),
+            families=[
+                'Singlet_Carbene_Intra_Disproportionation',
+            ],
+        )
+        cls.family = cls.database.families['Singlet_Carbene_Intra_Disproportionation']
+        
+    @classmethod
+    def tearDownClass(cls):
+        """A function run ONCE after all unit tests in this class."""
+        import rmgpy.data.rmg
+        rmgpy.data.rmg.database = None
+        
+    def AtestClearTree(self):
+        """
+        Test that the tree was properly cleared before generation
+        """
+        self.family.prepareTreeForGeneration(self.database.thermo)
+        ents = [ent for ent in self.groups.entries.itervalues() if ent.index != -1]
+        self.assertEquals(len(ents),1,'more than one relevant group left in groups after preparing tree for generation')
+        self.assertEquals(len(self.rules.entries),1,'more than one group in rules.entries after preparing tree for generation' )
+        root = self.groups.entries[self.rules.entries.keys()[0]]
+        self.assertEquals([root],self.forwardTemplate.reactants)
+        self.assertEquals([root],self.groups.top)
+        
+    def BtestGenerateTree(self):
+        """
+        test tree generation process
+        """
+        def objective(k1s,k2s):
+            return len(k1s)*np.std(k1s)+len(k2s)*np.std(k2s)
+        
+        self.family.generateTree(thermoDatabase=self.database.thermo,obj=objective) #test input objective function
+        
+        self.family.prepareTreeForGeneration(self.database.thermo) #reclear
+        
+        self.family.generateTree(thermoDatabase=self.database.thermo) #test that default objective works
+        
+    def CtestParentChild(self):
+        """
+        test that the tree is structuref properly
+        """
+        for entry in self.family.groups.entries.itervalues():
+            for entry2 in entry.children:
+                self.assertTrue(entry2 in self.family.groups.entries.itervalues())
+            if entry.parent:
+                self.assertTrue(entry.parent in self.family.groups.entries.itervalues())
+        
+        self.assertTrue(self.family.groups.entries['Root'].parent is None)
+                
+    def DtestRules(self):
+        """
+        test that there are four rules and each is under a different group
+        """
+        c = 0
+        for val in self.family.rules.entries.itervalues():
+            rs = val[1]
+            self.assertLess(len(rs),2,'more than one training reaction at a node')
+            if len(rs) == 1:
+                c += 1
+        
+        self.assertEquals(c,4,'incorrect number of kinetics information, expected 4 found {0}'.format(c))
+    
 class TestGenerateReactions(unittest.TestCase):
 
     @classmethod
