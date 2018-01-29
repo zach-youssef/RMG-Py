@@ -1188,7 +1188,9 @@ class Group(Graph):
             grp = deepcopy(self)
             grpc = deepcopy(self)
             grp.atoms[i].bonds[grp.atoms[j]].order = [bd]
+            grp.atoms[j].bonds[grp.atoms[i]].order = [bd]
             grpc.atoms[i].bonds[grpc.atoms[j]].order = list(Rbset-{bd})
+            grpc.atoms[j].bonds[grpc.atoms[i]].order = list(Rbset-{bd})
             
             atom_type_i = grp.atoms[i].atomType
             atom_type_j = grp.atoms[j].atomType
