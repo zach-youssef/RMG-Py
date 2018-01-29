@@ -49,6 +49,8 @@ try:
     import openbabel
 except:
     pass
+
+from rmgpy.molecule.group import GroupAtom
 from .graph import Vertex, Edge, Graph, getVertexConnectivityValue
 import rmgpy.molecule.group as gr
 from .atomtype import AtomType, atomTypes, getAtomType, AtomTypeError
@@ -1243,7 +1245,7 @@ class Molecule(Graph):
         When the atoms being mapped are known to be subgraph isomorphic (such as in most RMG operations) 
         one should use isSubgraphIsomorphic with the initialMap input instead
         """
-        cython.declare(a=Atom,L=list,initialMap=dict)
+        cython.declare(a=object,L=list,initialMap=dict)
 
         initialMap = dict()
         for atom in self.atoms:
