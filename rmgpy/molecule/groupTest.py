@@ -772,35 +772,31 @@ class TestGroup(unittest.TestCase):
         """
         
         testGrp = Group().fromAdjacencyList("""
-1    C u0 {2,[S,D]} 
-2    C u[0,1] {1,[S,D]} {3,S}
+1 *2 C u0 {2,[S,D]} 
+2 *1 C u[0,1] {1,[S,D]} {3,S}
 3    R!H     u0 {2,S}
             """)
         
-        extensions = {tuple([k.toAdjacencyList() for k in a]) for a in testGrp.getExtensions(R=[atomTypes[i] for i in ['C','O','H']])}
+        extensions = testGrp.getExtensions(R=[atomTypes[i] for i in ['C','O','H']])
+        extensions = [a[0] for a in extensions]
         
-        ans = {('1 C   u0     {2,D}\n2 C   u[0,1] {1,[S,D]} {3,S}\n3 R!H u0     {2,S}\n',
-  '1 C   u0     {2,S}\n2 C   u[0,1] {1,[S,D]} {3,S}\n3 R!H u0     {2,S}\n'),
- ('1 C   u0     {2,S}\n2 C   u[0,1] {1,[S,D]} {3,S}\n3 R!H u0     {2,S}\n',
-  '1 C   u0     {2,D}\n2 C   u[0,1] {1,[S,D]} {3,S}\n3 R!H u0     {2,S}\n'),
- ('1 C   u0     {2,[S,D]}\n2 C   u[0,1] {1,D} {3,S}\n3 R!H u0     {2,S}\n',
-  '1 C   u0     {2,[S,D]}\n2 C   u[0,1] {1,S} {3,S}\n3 R!H u0     {2,S}\n'),
- ('1 C   u0     {2,[S,D]}\n2 C   u[0,1] {1,S} {3,S}\n3 R!H u0     {2,S}\n',
-  '1 C   u0     {2,[S,D]}\n2 C   u[0,1] {1,D} {3,S}\n3 R!H u0     {2,S}\n'),
- ('1 C   u0     {2,[S,D]}\n2 C   u[0,1] {1,[S,D]} {3,S}\n3 R!H u0     {2,S} {4,[S,D,T,B]}\n4 R!H ux     {3,[S,D,T,B]}\n',),
- ('1 C   u0     {2,[S,D]}\n2 C   u[0,1] {1,[S,D]} {3,S} {4,[S,D,T,B]}\n3 R!H u0     {2,S}\n4 R!H ux     {2,[S,D,T,B]}\n',),
- ('1 C   u0     {2,[S,D]} {3,[S,D,T,B]}\n2 C   u[0,1] {1,[S,D]} {3,S}\n3 R!H u0     {1,[S,D,T,B]} {2,S}\n',),
- ('1 C   u0     {2,[S,D]} {4,[S,D,T,B]}\n2 C   u[0,1] {1,[S,D]} {3,S}\n3 R!H u0     {2,S}\n4 R!H ux     {1,[S,D,T,B]}\n',),
- ('1 C   u0 {2,[S,D]}\n2 C   u0 {1,[S,D]} {3,S}\n3 R!H u0 {2,S}\n',
-  '1 C   u0 {2,[S,D]}\n2 C   u1 {1,[S,D]} {3,S}\n3 R!H u0 {2,S}\n'),
- ('1 C   u0 {2,[S,D]}\n2 C   u1 {1,[S,D]} {3,S}\n3 R!H u0 {2,S}\n',
-  '1 C   u0 {2,[S,D]}\n2 C   u0 {1,[S,D]} {3,S}\n3 R!H u0 {2,S}\n'),
- ('1 C u0     {2,[S,D]}\n2 C u[0,1] {1,[S,D]} {3,S}\n3 C u0     {2,S}\n',
-  '1 C u0     {2,[S,D]}\n2 C u[0,1] {1,[S,D]} {3,S}\n3 O u0     {2,S}\n'),
- ('1 C u0     {2,[S,D]}\n2 C u[0,1] {1,[S,D]} {3,S}\n3 O u0     {2,S}\n',
-  '1 C u0     {2,[S,D]}\n2 C u[0,1] {1,[S,D]} {3,S}\n3 C u0     {2,S}\n')}
-        
-        self.assertEqual(extensions,ans,'generated extensions did not match expected extensions')
+        ans = ['1 *2 C   u0     {2,[S,D]} {4,[S,D,T,B]}\n2 *1 C   u[0,1] {1,[S,D]} {3,S}\n3    R!H u0     {2,S}\n4    R!H ux     {1,[S,D,T,B]}\n',
+ '1 *2 C   u0     {2,S}\n2 *1 C   u[0,1] {1,S} {3,S}\n3    R!H u0     {2,S}\n',
+ '1 *2 C   u0     {2,D}\n2 *1 C   u[0,1] {1,D} {3,S}\n3    R!H u0     {2,S}\n',
+ '1 *2 C   u0 {2,[S,D]}\n2 *1 C   u0 {1,[S,D]} {3,S}\n3    R!H u0 {2,S}\n',
+ '1 *2 C   u0 {2,[S,D]}\n2 *1 C   u1 {1,[S,D]} {3,S}\n3    R!H u0 {2,S}\n',
+ '1 *2 C   u0     {2,[S,D]}\n2 *1 C   u[0,1] {1,[S,D]} {3,S} {4,[S,D,T,B]}\n3    R!H u0     {2,S}\n4    R!H ux     {2,[S,D,T,B]}\n',
+ '1 *2 C   u0     {2,S}\n2 *1 C   u[0,1] {1,S} {3,S}\n3    R!H u0     {2,S}\n',
+ '1 *2 C   u0     {2,D}\n2 *1 C   u[0,1] {1,D} {3,S}\n3    R!H u0     {2,S}\n',
+ '1 *2 C u0     {2,[S,D]}\n2 *1 C u[0,1] {1,[S,D]} {3,S}\n3    C u0     {2,S}\n',
+ '1 *2 C u0     {2,[S,D]}\n2 *1 C u[0,1] {1,[S,D]} {3,S}\n3    O u0     {2,S}\n',
+ '1 *2 C   u0     {2,[S,D]}\n2 *1 C   u[0,1] {1,[S,D]} {3,S}\n3    R!H u0     {2,S} {4,[S,D,T,B]}\n4    R!H ux     {3,[S,D,T,B]}\n',
+ '1 *2 C   u0     {2,[S,D]} {3,[S,D,T,B]}\n2 *1 C   u[0,1] {1,[S,D]} {3,S}\n3    R!H u0     {1,[S,D,T,B]} {2,S}\n']
+        ans = [Group().fromAdjacencyList(k) for k in ans]
+
+        for v in ans:
+            boos = [ext.isIdentical(v) and ext.labeledIsSubgraphIsomorphic(v) for ext in extensions]
+            self.assertTrue(any(boos),'generated extensions did not match expected extensions')
         
     def testPickle(self):
         """
