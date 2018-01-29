@@ -2239,7 +2239,7 @@ class KineticsFamily(Database):
         
         return new,comp,newInds    
     
-    def evalExt(self,parent,ext,extname,obj=None):
+    def evalExt(self,parent,ext,extname,obj=None,T=1000.0):
         """
         evaluates an appropriate linear combination of the objective functions defined by vec
         for the extension ext with name extname to the parent entry parent
@@ -2252,13 +2252,13 @@ class KineticsFamily(Database):
             return np.inf,True
         else:
             if obj:
-                ob,boo = getObjectiveFunction(new,old,obj)
+                ob,boo = getObjectiveFunction(new,old,obj,T=T)
             else:
-                ob,boo = getObjectiveFunction(new,old)
+                ob,boo = getObjectiveFunction(new,old,T=T)
             return ob,True
 
     
-    def extendNode(self,parent,thermoDatabase=None,obj=None):
+    def extendNode(self,parent,thermoDatabase=None,obj=None,T=1000.0):
         """
         Constructs an extension to the group parent based on evaluation of the linear
         combination of the objective functions defined by vec
@@ -2269,7 +2269,7 @@ class KineticsFamily(Database):
         vals = []
         matchedExtension = []
         for grp,grpc,name,typ in exts:
-            val,boo = self.evalExt(parent,grp,name,obj)
+            val,boo = self.evalExt(parent,grp,name,obj,T)
             matchedExtension.append(boo)
             ind = type_order.index(typ)
             vals.append(val) 
@@ -2337,7 +2337,7 @@ class KineticsFamily(Database):
             
         return
     
-    def generateTree(self,obj=None,thermoDatabase=None):
+    def generateTree(self,obj=None,thermoDatabase=None,T=1000.0):
         """
         Generate a tree by greedy optimization based on a linear combination of 
         objective functions defined by vec
@@ -2355,7 +2355,7 @@ class KineticsFamily(Database):
         while boo:
             for entry in self.groups.entries.itervalues():
                 if entry.index != -1 and len(self.rules.entries[entry.label])>1:
-                    self.extendNode(entry,thermoDatabase,obj)
+                    self.extendNode(entry,thermoDatabase,obj,T)
                     break
                 elif entry.parent is None or entry.parent.parent is None:
                     pass
