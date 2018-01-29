@@ -37,10 +37,12 @@ import numpy as np
 import logging
 import codecs
 from copy import deepcopy
+from collections import OrderedDict
 
 from rmgpy.constraints import failsSpeciesConstraints
 from rmgpy.data.base import Database, Entry, LogicNode, LogicOr, ForbiddenStructures,\
                             getAllCombinations
+from rmgpy import settings
 from rmgpy.reaction import Reaction
 from rmgpy.kinetics import Arrhenius
 from rmgpy.molecule import Bond, GroupBond, Group, Molecule
@@ -2391,6 +2393,49 @@ class KineticsFamily(Database):
                     iters += 1
         
         return
+    
+    def prepareTreeForGeneration(self,thermoDatabase=None):
+        """
+        clears groups and rules in the tree, generates an appropriate
+        root group to start from and then readds training reactions
+        """
+        #find the starting node
+        grp = None
+        
+        rtmps = self.getRootTemplate()
+        for ent in rtmps:
+            if grp is None:
+                grp = ent.item
+            else:
+                grp.mergeGroups(ent.item)
+        
+        
+        #clear everything
+        self.groups.entries = {x.label:x for x in self.groups.entries.itervalues() if x.index == -1}
+        self.rules.entries = OrderedDict()
+        
+        #add the starting node
+        self.addEntry(None,grp,'Root')
+        self.groups.top = [self.groups.entries['Root']]
+        self.forwardTemplate.reactants = [self.groups.entries['Root']]
+
+        #fill with training reactions
+        self.addKineticsRulesFromTrainingSet(thermoDatabase)
+        
+        return
+    
+    def saveGeneratedTree(self,path=None):
+        """
+        clears the rules and saves the family to its 
+        current location in database
+        """
+        if path is None:
+            path = settings['database.directory']
+            path = os.path.join(path,'kinetics','families',self.label)
+        
+        self.rules.entries = OrderedDict() #have to clear the new rules made
+        
+        self.save(path)
     
     def retrieveOriginalEntry(self, templateLabel):
         """
