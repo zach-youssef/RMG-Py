@@ -741,7 +741,7 @@ class RMG(util.Subject):
                 if self.wallTime > 0 and len(self.execTime) > 1:
                     t = self.execTime[-1]
                     dt = self.execTime[-1] - self.execTime[-2]
-                    if t + 3 * dt > self.wallTime:
+                    if t > self.wallTime:
                         logging.info('MODEL GENERATION TERMINATED')
                         logging.info('')
                         logging.info('There is not enough time to complete the next iteration before the wall time is reached.')
