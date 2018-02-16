@@ -82,6 +82,9 @@ def parse_command_line_arguments(command_line_args=None):
     parser.add_argument('-t', '--walltime', type=str, nargs=1, default='00:00:00:00',
                         metavar='DD:HH:MM:SS', help='set the maximum execution time')
 
+    parser.add_argument('-i', '--iterations', type=int, nargs=1, default=None,
+                        help='set the maximum number of RMG iterations')
+
     # Add option to output a folder that stores the details of each kinetic database entry source
     parser.add_argument('-k', '--kineticsdatastore', action='store_true',
                         help='output a folder, kinetics_database, that contains a .txt file for each reaction family '
@@ -98,6 +101,10 @@ def parse_command_line_arguments(command_line_args=None):
     # If walltime was specified, retrieve this string from the element 1 list
     if args.walltime != '00:00:00:00':
         args.walltime = args.walltime[0]
+
+    # If max iterations was specified, retrieve this string from the element 1 list
+    if args.iterations:
+        args.iterations = args.iterations[0]
 
     # Set directories
     input_directory = os.path.abspath(os.path.dirname(args.file))
@@ -136,7 +143,8 @@ def main():
     kwargs = {
         'restart': args.restart,
         'walltime': args.walltime,
-        'kineticsdatastore': args.kineticsdatastore
+        'kineticsdatastore': args.kineticsdatastore,
+        'max_iterations': args.iterations,
     }
 
     if args.profile:

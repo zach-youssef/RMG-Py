@@ -137,6 +137,7 @@ class RMG(util.Subject):
         self.clear()
         self.modelSettingsList = []
         self.simulatorSettingsList = []
+        self.max_iterations = None
     
     def clear(self):
         """
@@ -184,6 +185,7 @@ class RMG(util.Subject):
         self.quantumMechanics = None
         self.speciesConstraints = {}
         self.wallTime = '00:00:00:00'
+        self.max_iterations = None
         self.initializationTime = 0
         self.kineticsdatastore = None
         
@@ -403,6 +405,8 @@ class RMG(util.Subject):
             self.wallTime = kwargs['walltime']
         except KeyError:
             pass
+
+        self.max_iterations = kwargs['max_iterations']
 
         data = self.wallTime.split(':')
         if not len(data) == 4:
@@ -751,6 +755,17 @@ class RMG(util.Subject):
                         logging.info('The current model core has %s species and %s reactions' % (coreSpec, coreReac))
                         logging.info('The current model edge has %s species and %s reactions' % (edgeSpec, edgeReac))
                         return
+
+                if self.max_iterations and (self.reactionModel.iterationNum >= self.max_iterations):
+                    logging.info('MODEL GENERATION TERMINATED')
+                    logging.info('')
+                    logging.info('The maximum number of iterations of {0} has been reached'.format(self.max_iterations))
+                    logging.info('The output model may be incomplete.')
+                    logging.info('')
+                    coreSpec, coreReac, edgeSpec, edgeReac = self.reactionModel.getModelSize()
+                    logging.info('The current model core has %s species and %s reactions' % (coreSpec, coreReac))
+                    logging.info('The current model edge has %s species and %s reactions' % (edgeSpec, edgeReac))
+                    return
                     
             if maxNumSpcsHit: #resets maxNumSpcsHit and continues the settings for loop
                 logging.info('The maximum number of species ({0}) has been hit, Exiting stage {1} ...'.format(modelSettings.maxNumSpecies,q+1))
