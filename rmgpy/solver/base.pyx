@@ -773,7 +773,7 @@ cdef class ReactionSystem(DASx):
                             continue
                         for spcIndex in self.reactantIndices[index+numCoreReactions,:]:
                             if spcIndex != -1 and spcIndex<numCoreSpecies:
-                                if coreSpecies[spcIndex].molecule[0].multiplicity != 1:
+                                if coreSpecies[spcIndex].molecule[0].multiplicity != 2:
                                     continue
                                 consumption = coreSpeciesConsumptionRates[spcIndex]
                                 if consumption != 0: #if consumption = 0 ignore species
@@ -785,7 +785,7 @@ cdef class ReactionSystem(DASx):
                             continue
                         for spcIndex in self.productIndices[index+numCoreReactions,:]:
                             if spcIndex != -1 and spcIndex<numCoreSpecies:
-                                if coreSpecies[spcIndex].molecule[0].multiplicity != 1:
+                                if coreSpecies[spcIndex].molecule[0].multiplicity != 2:
                                     continue
                                 consumption = coreSpeciesConsumptionRates[spcIndex]
                                 if consumption != 0: #if production = 0 ignore species
