@@ -354,8 +354,8 @@ atomTypes['N3b' ] = AtomType('N3b',  generic=['R','R!H','N','Val5'],  specific=[
                              single=[0], allDouble=[0], rDouble=[0], oDouble=[0], sDouble=[0], triple=[0], benzene=[2], lonePairs=[1], charge=[0])
 # examples for N3b: Oxazole, Pyradine, Pyrazine, 1,3,5-Triazine, Benzimidazole, Purine
 atomTypes['N5sc'] = AtomType('N5sc',  generic=['R','R!H','N','Val5'],  specific=[],  # (shared electrons = 4-8)
-                             single=[0,1,2,3,4], allDouble=[0], rDouble=[0], oDouble=[0], sDouble=[0], triple=[0], benzene=[0], lonePairs=[0], charge=[+1,+2])
-# examples for N5sc: !! N5sc should eventually be deleted, see #1206   [NH4+], [NH3+][O-] {N has u1 p0}
+                             single=[3,4], allDouble=[0], rDouble=[0], oDouble=[0], sDouble=[0], triple=[0], benzene=[0], lonePairs=[0], charge=[+1,+2])
+# examples for N5sc: [NH4+], [NH3+][O-] {N has u1 p0}
 atomTypes['N5dc'] = AtomType('N5dc',  generic=['R','R!H','N','Val5'],  specific=[],  # (shared electrons = 6-8)
                              single=[0,1,2], allDouble=[1], rDouble=[], oDouble=[], sDouble=[], triple=[0], benzene=[0], lonePairs=[0], charge=[+1])
 # examples for N5dc: O[N+](=O)(O-) nitrate group, [N+](=O)(O)[O-], O=[N+][O-], [N+](=O)(O[N+](=O)[O-])[O-], C=[N+]=[SH-], [NH2+]=[SH-]
@@ -399,7 +399,7 @@ atomTypes['O4sc'] = AtomType('O4sc', generic=['R','R!H','O','Val6'],  specific=[
                              single=[0,1,2,3], allDouble=[0], rDouble=[], oDouble=[], sDouble=[], triple=[0], benzene=[0], lonePairs=[1], charge=[+1])
 # examples for O4sc: [O-][OH+]C
 atomTypes['O4dc'] = AtomType('O4dc', generic=['R','R!H','O','Val6'],  specific=[],  # (shared electrons = 7-8)
-                             single=[0,1], allDouble=[1], rDouble=[], oDouble=[], sDouble=[], triple=[0], benzene=[0], lonePairs=[1], charge=[+1])
+                             single=[1], allDouble=[1], rDouble=[], oDouble=[], sDouble=[], triple=[0], benzene=[0], lonePairs=[1], charge=[+1])
 # examples for O4dc: the positively charged O in ozone [O-][O+]=O
 atomTypes['O4tc'] = AtomType('O4tc',  generic=['R','R!H','O','Val6'],  specific=[],  # (shared electrons = 8)
                              single=[0], allDouble=[0], rDouble=[], oDouble=[], sDouble=[], triple=[1], benzene=[0], lonePairs=[1], charge=[+1])
