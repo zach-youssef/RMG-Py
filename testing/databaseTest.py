@@ -110,6 +110,12 @@ class TestDatabase():  # cannot inherit from unittest.TestCase if we want to use
             test.description = test_name
             self.compat_func_name = test_name
             yield test, library_name
+            
+            test = lambda x: self.kinetics_checkLibraryRatesCanBeEvaluated(library)
+            test_name = "Kinetics library {0}: check rates can be evaluated?".format(library_name)
+            test.description = test_name
+            self.compat_func_name = test_name
+            yield test, library_name
 
     def test_thermo(self):
         for group_name, group in self.database.thermo.groups.iteritems():
@@ -415,7 +421,14 @@ class TestDatabase():  # cannot inherit from unittest.TestCase if we want to use
                         continue
 
                     nose.tools.assert_false(speciesList[i].molecule[0].isIsomorphic(speciesList[j].molecule[0], initialMap), "Species {0} and species {1} in {2} database were found to be identical.".format(speciesList[i].label,speciesList[j].label,database.label))
-
+    
+    def kinetics_checkLibraryRatesCanBeEvaluated(self, library):
+        """
+        This test ensures that every library reaction has evaluable kinetics
+        """
+        for entry in library.entries.values():
+            entry.data.getRateCoefficient(1000.0,1.0)
+            
     def kinetics_checkReactantAndProductTemplate(self, family_name):
         """
         This test checks whether the reactant and product templates within a family are correctly defined.
