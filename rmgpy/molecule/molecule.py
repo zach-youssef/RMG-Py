@@ -448,6 +448,30 @@ class Atom(Vertex):
 
         return order
 
+    def compare_bonds(self, atom):
+        """
+        Compare the bonding between two :class:Atom objects
+        Checks that two atoms, `self` and `atom`, have identical neighbors (by Atom.id),
+        and that the respective bonds have identical orders.
+        Returns `True` if all attributes are identical, `False` otherwise
+        """
+        assert self.id != atom.id, "atom id's must be generated via Molecule.assignAtomIDs()" \
+                                   "before comparing bond connectivity."
+        atoms1 = set(self.bonds.keys())
+        atoms2 = set(atom.bonds.keys())
+        for atom1 in atoms1:
+            for atom2 in atoms2:
+                if atom1.id == atom2.id:
+                    if not self.bonds[atom1].order == atom.bonds[atom2].order:
+                        # at least one unidentical bond
+                        return False
+                    break
+            else:
+                # exact neighbor id not found
+                return False
+        # neighbors and respective bonds are identical
+        return True
+
 ################################################################################
 
 class Bond(Edge):
@@ -2096,13 +2120,13 @@ class Molecule(Graph):
             return False
 
     def getNthNeighbor(self, startingAtoms, distanceList, ignoreList = None, n=1):
-        '''
+        """
         Recursively get the Nth nonHydrogen neighbors of the startingAtoms, and return them in a list.
         `startingAtoms` is a list of :class:Atom for which we will get the nth neighbor.
         `distanceList` is a list of intergers, corresponding to the desired neighbor distances.
         `ignoreList` is a list of :class:Atom that have been counted in (n-1)th neighbor, and will not be returned.
         `n` is an interger, corresponding to the distance to be calculated in the current iteration.
-        '''
+        """
         if ignoreList is None:
             ignoreList = []
 
@@ -2120,6 +2144,16 @@ class Molecule(Graph):
             else:
                 neighbors = self.getNthNeighbor(neighbors, distanceList, ignoreList, n+1)
         return neighbors
+
+    def get_atom_by_id(self, id):
+        """
+        Returns a :class:Atom with the corresponding id if found,
+        otherwise returns None.
+        """
+        for atom in self.atoms:
+            if atom.id == id:
+                return atom
+        return None
 
 
 # this variable is used to name atom IDs so that there are as few conflicts by 
