@@ -2315,76 +2315,99 @@ class KineticsFamily(Database):
                     exts = grp.getExtensions(basename=names[-1],atmInd=atmInds[-1][0],atmInd2=atmInds[-1][1])
             else:
                 exts = grp.getExtensions(basename=names[-1])
-                
-            regInds = []
+            
+            regDict = dict()
+            extInds = []
             for i,(grp2,grpc,name,typ,indc) in enumerate(exts):
+
+                if typ != 'intNewBondExt' and typ != 'extNewBondExt' and (typ,indc) not in regDict.keys():
+                    regDict[(typ,indc)] = ([],[])
                 val,boo = self.evalExt(parent,grp2,name,obj,T)
+                    
                 if val != np.inf:
                     outExts[-1].append(exts[i]) #this extension splits reactions (optimization dim)
-                elif boo:
-                    regInds.append(i) #this extension matches all reactions (regularization dim)
-                else:
-                    continue #this extension matches no reactions
+                    if typ == 'atomExt':
+                        regDict[(typ,indc)][0].extend(grp2.atoms[indc[0]].atomType)
+                    elif typ == 'elExt':
+                        regDict[(typ,indc)][0].extend(grp2.atoms[indc[0]].radicalElectrons)
+                    elif typ == 'bondExt':
+                        regDict[(typ,indc)][0].extend(grp2.getBond(grp2.atoms[indc[0]],grp2.atoms[indc[1]]).order)
+                        
+                elif boo: #this extension matches all reactions (regularization dim)
+                    if typ == 'intNewBondExt' or typ == 'extNewBondExt':
+                        extInds.append(i)  #these are bond formation extensions, we want to expand these until we get splits 
+                    elif typ == 'atomExt':
+                        regDict[(typ,indc)][0].extend(grp2.atoms[indc[0]].atomType)
+                    elif typ == 'elExt':
+                        regDict[(typ,indc)][0].extend(grp2.atoms[indc[0]].radicalElectrons)
+                    elif typ == 'bondExt':
+                        regDict[(typ,indc)][0].extend(grp2.getBond(grp2.atoms[indc[0]],grp2.atoms[indc[1]]).order)
+
+                else:                    
+                    #this extension matches no reactions
+                    if typ == 'atomExt':
+                        regDict[(typ,indc)][1].extend(grp2.atoms[indc[0]].atomType)
+                    elif typ == 'elExt':
+                        regDict[(typ,indc)][1].extend(grp2.atoms[indc[0]].radicalElectrons)
+                    elif typ == 'bondExt':
+                        regDict[(typ,indc)][1].extend(grp2.getBond(grp2.atoms[indc[0]],grp2.atoms[indc[1]]).order)
+            
                     
-            extInds = []
-            for ind in regInds: #have to label the regularization dimensions in all relevant groups
-                grpr,grpcr,namer,typr,indcr = exts[ind]
-                
+            for typr,indcr in regDict.keys(): #have to label the regularization dimensions in all relevant groups
+                regVal = regDict[(typr,indcr)][0]
                 #parent
                 if typr != 'intNewBondExt' and typr != 'extNewBondExt': #these dimensions should be regularized
                     if typr == 'atomExt':
-                        grp.atoms[indcr[0]].reg_dim_atm = True
+                        grp.atoms[indcr[0]].reg_dim_atm = regVal
                     elif typr == 'elExt':
-                        grp.atoms[indcr[0]].reg_dim_u = True
+                        grp.atoms[indcr[0]].reg_dim_u = regVal
                     elif typr == 'bondExt':
                         atms = grp.atoms
                         bd = grp.getBond(atms[indcr[0]],atms[indcr[1]])
-                        bd.reg_dim = True
+                        bd.reg_dim = regVal
                             
                 #extensions being sent out
                 if typr != 'intNewBondExt' and typr != 'extNewBondExt': #these dimensions should be regularized
                     for grp2,grpc,name,typ,indc in outExts[-1]: #returned groups
                         if typr == 'atomExt':
-                            grp2.atoms[indcr[0]].reg_dim_atm = True
+                            grp2.atoms[indcr[0]].reg_dim_atm = regVal
                             if grpc:
-                                grpc.atoms[indcr[0]].reg_dim_atm = True
+                                grpc.atoms[indcr[0]].reg_dim_atm = regVal
                         elif typr == 'elExt':
-                            grp2.atoms[indcr[0]].reg_dim_u = True
+                            grp2.atoms[indcr[0]].reg_dim_u = regVal
                             if grpc:
-                                grpc.atoms[indcr[0]].reg_dim_u = True
+                                grpc.atoms[indcr[0]].reg_dim_u = regVal
                         elif typr == 'bondExt':
                             atms = grp2.atoms
                             bd = grp2.getBond(atms[indcr[0]],atms[indcr[1]])
-                            bd.reg_dim = True
+                            bd.reg_dim = regVal
                             if grpc:
                                 atms = grpc.atoms
                                 bd = grp2.getBond(atms[indcr[0]],atms[indcr[1]])
-                                bd.reg_dim = True
-                else: #these are bond formation extensions, we want to expand these until we get splits 
-                    extInds.append(ind)
+                                bd.reg_dim = regVal
             
             #extensions being expanded
-            for ind in regInds: #have to label the regularization dimensions in all relevant groups
-                grpr,grpcr,namer,typr,indcr = exts[ind]
+            for typr,indcr in regDict.keys(): #have to label the regularization dimensions in all relevant groups
+                regVal = regDict[(typr,indcr)][0]
                 if typr != 'intNewBondExt' and typr != 'extNewBondExt': #these dimensions should be regularized
                     for ind2 in extInds: #groups for expansion
                         grp2,grpc,name,typ,indc = exts[ind2]
                         if typr == 'atomExt':
-                            grp2.atoms[indcr[0]].reg_dim_atm = True
+                            grp2.atoms[indcr[0]].reg_dim_atm = regVal
                             if grpc:
-                                grpc.atoms[indcr[0]].reg_dim_atm = True
+                                grpc.atoms[indcr[0]].reg_dim_atm = regVal
                         elif typr == 'elExt':
-                            grp2.atoms[indcr[0]].reg_dim_u = True
+                            grp2.atoms[indcr[0]].reg_dim_u = regVal
                             if grpc:
-                                grpc.atoms[indcr[0]].reg_dim_u = True
+                                grpc.atoms[indcr[0]].reg_dim_u = regVal
                         elif typr == 'bondExt':
                             atms = grp2.atoms
                             bd = grp2.getBond(atms[indcr[0]],atms[indcr[1]])
-                            bd.reg_dim = True
+                            bd.reg_dim = regVal
                             if grpc:
                                 atms = grpc.atoms
                                 bd = grp2.getBond(atms[indcr[0]],atms[indcr[1]])
-                                bd.reg_dim = True
+                                bd.reg_dim = regVal
             
             outExts.append([])
             grps.pop()
