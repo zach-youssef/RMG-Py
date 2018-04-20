@@ -21,7 +21,7 @@ boundaryAtoms = ["*1", "*2"]
 entry(
     index = 0,
     label = "RnH",
-    group = "OR{R5Hall, R6Hall}",
+    group = "OR{R5Hall, R6Hall, R2Hall, R3Hall}",
     kinetics = None,
 )
 
@@ -48,6 +48,31 @@ entry(
 
 entry(
     index = 3,
+    label = "R2Hall",
+    group = 
+"""
+1 *1 R!H u1 {2,[S,D,T,B]}
+2 *2 R!H u0 {1,[S,D,T,B]} {3,S}
+3 *3 H   u0 {2,S}
+""",
+    kinetics = None,
+)
+
+entry(
+    index = 4,
+    label = "R3Hall",
+    group = 
+"""
+1 *1 R!H u1 {2,[S,D,T,B]}
+2 *4 R!H ux {1,[S,D,T,B]} {3,[S,D,T,B]}
+3 *2 R!H u0 {2,[S,D,T,B]} {4,S}
+4 *3 H   u0 {3,S}
+""",
+    kinetics = None,
+)
+
+entry(
+    index = 5,
     label = "R5Hall",
     group = 
 """
@@ -62,7 +87,7 @@ entry(
 )
 
 entry(
-    index = 4,
+    index = 6,
     label = "R5HJ_1",
     group = 
 """
@@ -77,7 +102,7 @@ entry(
 )
 
 entry(
-    index = 5,
+    index = 7,
     label = "R5HJ_2",
     group = 
 """
@@ -92,7 +117,7 @@ entry(
 )
 
 entry(
-    index = 6,
+    index = 8,
     label = "R5HJ_3",
     group = 
 """
@@ -107,7 +132,7 @@ entry(
 )
 
 entry(
-    index = 7,
+    index = 9,
     label = "R5H",
     group = 
 """
@@ -122,7 +147,7 @@ entry(
 )
 
 entry(
-    index = 8,
+    index = 10,
     label = "R6Hall",
     group = 
 """
@@ -138,7 +163,7 @@ entry(
 )
 
 entry(
-    index = 9,
+    index = 11,
     label = "R6HJ_1",
     group = 
 """
@@ -154,7 +179,7 @@ entry(
 )
 
 entry(
-    index = 10,
+    index = 12,
     label = "R6HJ_2",
     group = 
 """
@@ -170,7 +195,7 @@ entry(
 )
 
 entry(
-    index = 11,
+    index = 13,
     label = "R6HJ_3",
     group = 
 """
@@ -186,7 +211,7 @@ entry(
 )
 
 entry(
-    index = 12,
+    index = 14,
     label = "R6HJ_4",
     group = 
 """
@@ -202,7 +227,7 @@ entry(
 )
 
 entry(
-    index = 13,
+    index = 15,
     label = "R6H",
     group = 
 """
@@ -218,7 +243,7 @@ entry(
 )
 
 entry(
-    index = 14,
+    index = 16,
     label = "O_rad_out",
     group = 
 """
@@ -228,7 +253,7 @@ entry(
 )
 
 entry(
-    index = 15,
+    index = 17,
     label = "Cd_rad_out",
     group = 
 """
@@ -238,7 +263,7 @@ entry(
 )
 
 entry(
-    index = 16,
+    index = 18,
     label = "C_rad_out_single",
     group = 
 """
@@ -250,7 +275,7 @@ entry(
 )
 
 entry(
-    index = 17,
+    index = 19,
     label = "O_H_out",
     group = 
 """
@@ -261,7 +286,7 @@ entry(
 )
 
 entry(
-    index = 18,
+    index = 20,
     label = "Cd_H_out_double",
     group = 
 """
@@ -273,7 +298,7 @@ entry(
 )
 
 entry(
-    index = 19,
+    index = 21,
     label = "Cd_H_out_single",
     group = 
 """
@@ -285,7 +310,7 @@ entry(
 )
 
 entry(
-    index = 20,
+    index = 22,
     label = "Cs_H_out",
     group = 
 """
@@ -300,6 +325,8 @@ entry(
 tree(
 """
 L1: RnH
+    L2: R2Hall
+    L2: R3Hall
     L2: R5Hall
         L3: R5HJ_1
         L3: R5HJ_2
