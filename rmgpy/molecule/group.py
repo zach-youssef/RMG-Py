@@ -60,9 +60,8 @@ class GroupAtom(Vertex):
     `lonePairs`         ``list``            The number of lone electron pairs
     'charge'            ''list''            The partial charge of the atom
     `props`             ``dict``            Dictionary for storing additional atom properties
-    `reg_dim_atm`       ``boolean``         Flag indicating that the atom type is a free dimension in tree optimization
-    `reg_dim_u`         ``boolean``         Flag indicating that the number of unpaired electrons is a free dimension in tree optimization
-    `reg_dim_ext`       ``boolean``         Flag indicating that an external bond extension to this atom is a free dimension in tree optimization
+    `reg_dim_atm`       ``list``            List of atom types that are free dimensions in tree optimization
+    `reg_dim_u`         ``list``            List of unpaired electron numbers that are free dimensions in tree optimization
     =================== =================== ====================================
 
     Each list represents a logical OR construct, i.e. an atom will match the
@@ -82,9 +81,11 @@ class GroupAtom(Vertex):
         self.charge = charge or []
         self.label = label
         self.lonePairs = lonePairs or []
+
         self.props = props or {}
-        self.reg_dim_atm = False
-        self.reg_dim_u = False
+        
+        self.reg_dim_atm = []
+        self.reg_dim_u = []
 
 
     def __reduce__(self):
@@ -616,7 +617,7 @@ class GroupBond(Edge):
         else:
             self.order = order or []
         
-        self.reg_dim = False
+        self.reg_dim = []
 
     def __str__(self):
         """
@@ -1102,7 +1103,7 @@ class Group(Graph):
         if atmInd is None:
             for i,atm in enumerate(atoms):
                 typ = atm.atomType
-                if not atm.reg_dim_atm:
+                if atm.reg_dim_atm == []:
                     if len(typ) == 1:
                         if typ[0].label == 'R':
                             extents.extend(self.specifyAtomExtensions(i,basename,R)) #specify types of atoms
@@ -1110,20 +1111,39 @@ class Group(Graph):
                             extents.extend(self.specifyAtomExtensions(i,basename,RnH))
                     else:
                         extents.extend(self.specifyAtomExtensions(i,basename,typ))
-                if not atm.reg_dim_u:
+                else:
+                    if len(typ) == 1:
+                        if typ[0].label == 'R':
+                            extents.extend(self.specifyAtomExtensions(i,basename,atm.reg_dim_atm)) #specify types of atoms
+                        elif typ[0].label == 'R!H':
+                            extents.extend(self.specifyAtomExtensions(i,basename,list(set(atm.reg_dim_atm) & set(R)))) 
+                    else:
+                        extents.extend(self.specifyAtomExtensions(i,basename,list(set(typ) & set(atm.reg_dim-atm))))
+                if atm.reg_dim_u == []:
                     if len(atm.radicalElectrons) != 1:
                         if len(atm.radicalElectrons) == 0:
                             extents.extend(self.specifyUnpairedExtensions(i,basename,Run))
                         else:
                             extents.extend(self.specifyUnpairedExtensions(i,basename,atm.radicalElectrons))
+                else:
+                    if len(atm.radicalElectrons) != 1:
+                        if len(atm.radicalElectrons) == 0:
+                            extents.extend(self.specifyUnpairedExtensions(i,basename,atm.reg_dim_u))
+                        else:
+                            extents.extend(self.specifyUnpairedExtensions(i,basename,list(set(atm.radicalElectrons) & set(atm.reg_dim_u))))
                 extents.extend(self.specifyExternalNewBondExtensions(i,basename,Rbonds))
                 for j,atm2 in enumerate(atoms):
                     if j<i and not self.hasBond(atm,atm2):
                         extents.extend(self.specifyInternalNewBondExtensions(i,j,Nsplits,basename,Rbonds))
-                    if self.hasBond(atm,atm2):
+                    elif j<i:
                         bd = self.getBond(atm,atm2)
-                        if len(bd.order) > 1 and not bd.reg_dim:
+                        if len(bd.order) > 1 and bd.reg_dim == []:
                             extents.extend(self.specifyBondExtensions(i,j,basename,bd.order))
+                        elif len(bd.order) > 1:
+                            y = set(bd.order)
+                            z = set(bd.reg_dim)
+                            x = list(y-z)
+                            extents.extend(self.specifyBondExtensions(i,j,basename,x))
         
         elif atmInd is not None and atmInd2 is not None: #if both atmInd and atmInd2 are defined only look at the bonds between them
             i = atmInd
@@ -1134,33 +1154,53 @@ class Group(Graph):
                 extents.extend(self.specifyInternalNewBondExtensions(i,j,Nsplits,basename,Rbonds))
             if self.hasBond(atm,atm2):
                 bd = self.getBond(atm,atm2)
-                if len(bd.order) > 1 and not bd.reg_dim:
+                if len(bd.order) > 1 and bd.reg_dim == []:
                     extents.extend(self.specifyBondExtensions(i,j,basename,bd.order))
+                elif len(bd.order) > 1:
+                    extents.extend(self.specifyBondExtensions(i,j,basename,list(set(bd.order)-set(bd.reg_dim))))
                     
         elif atmInd is not None: #look at the atom at atmInd
             i = atmInd
             atm = atoms[i]
             typ = atm.atomType
-            if not atm.reg_dim_atm:
+            if atm.reg_dim_atm == []:
                 if len(typ) == 1:
                     if typ[0].label == 'R':
                         extents.extend(self.specifyAtomExtensions(i,basename,R)) #specify types of atoms
                     elif typ[0].label == 'R!H':
                         extents.extend(self.specifyAtomExtensions(i,basename,RnH))
-            if not atm.reg_dim_u:
+                else:
+                    extents.extend(self.specifyAtomExtensions(i,basename,typ))
+            else:
+                if len(typ) == 1:
+                    if typ[0].label == 'R':
+                        extents.extend(self.specifyAtomExtensions(i,basename,atm.reg_dim_atm)) #specify types of atoms
+                    elif typ[0].label == 'R!H':
+                        extents.extend(self.specifyAtomExtensions(i,basename,list(set(atm.reg_dim_atm) & set(R)))) 
+                else:
+                    extents.extend(self.specifyAtomExtensions(i,basename,list(set(typ) & set(atm.reg_dim-atm))))
+            if atm.reg_dim_u == []:
                 if len(atm.radicalElectrons) != 1:
                     if len(atm.radicalElectrons) == 0:
                         extents.extend(self.specifyUnpairedExtensions(i,basename,Run))
                     else:
                         extents.extend(self.specifyUnpairedExtensions(i,basename,atm.radicalElectrons))
+            else:
+                if len(atm.radicalElectrons) != 1:
+                    if len(atm.radicalElectrons) == 0:
+                        extents.extend(self.specifyUnpairedExtensions(i,basename,atm.reg_dim_atm))
+                    else:
+                        extents.extend(self.specifyUnpairedExtensions(i,basename,list(set(atm.radicalElectrons) & set(atm.reg_dim_u))))
             extents.extend(self.specifyExternalNewBondExtensions(i,basename,Rbonds))
             for j,atm2 in enumerate(atoms):
                 if j<i and not self.hasBond(atm,atm2):
                     extents.extend(self.specifyInternalNewBondExtensions(i,j,Nsplits,basename,Rbonds))
-                if self.hasBond(atm,atm2):
+                elif j<i:
                     bd = self.getBond(atm,atm2)
-                    if len(bd.order) > 1 and not bd.reg_dim:
+                    if len(bd.order) > 1 and bd.reg_dim == []:
                         extents.extend(self.specifyBondExtensions(i,j,basename,bd.order))
+                    elif len(bd.order) > 1:
+                        extents.extend(self.specifyBondExtensions(i,j,basename,list(set(bd.order)-set(bd.reg_dim))))
         
         else:
             raise ValueError('atmInd must be defined if atmInd2 is defined')
