@@ -688,21 +688,23 @@ class TestTreeGeneration(unittest.TestCase):
                     atms = grp.atoms
                     if typ == 'bondExt':
                         bd = grp.getBond(atms[indc[0]],atms[indc[1]])
-                        boo2 = bd.reg_dim
-                        if boo != boo2:
+                        bds = bd.reg_dim
+                        if boo and bds != [] and not (set(bd.order) <= set(bds)):
                             logging.error('bond regularization dimension missed')
-                            vioObj.add(set(indc))
+                            vioObj.add((tuple(indc),tuple(bds),tuple(bd.order),typ))
                     elif typ == 'atomExt':
-                        boo2 = atms[indc[0]].reg_dim_atm
-                        if boo != boo2:
+                        atypes = atms[indc[0]].reg_dim_atm
+                        atype = atms[indc[0]].atomType
+                        if boo and atypes != [] and not (set(atype) <= set(atypes)):
                             logging.error('atomtype regularization dimension missed')
-                            vioObj.add(set(indc))
+                            vioObj.add((tuple(indc),tuple(atypes),tuple(atype),typ))
                     elif typ == 'elExt':
-                        boo2 = atms[indc[0]].reg_dim_u
-                        if boo != boo2:
+                        us = atms[indc[0]].reg_dim_u
+                        u = atms[indc[0]].radicalElectrons
+                        if boo and us != [] and not (set(u) <= set(us)):
                             logging.error('unpaired electron regularization dimension missed')
-                            vioObj.add(set(indc))
-            self.assertTrue(len(vioObj) <= 1,'there were {0} regularization violations, {1}'.format(len(vioObj),vioObj))
+                            vioObj.add((tuple(indc),tuple(us),tuple(u),typ))
+            self.assertTrue(len(vioObj) <= 1,'there were {0} regularization violations at, {1}'.format(len(vioObj),vioObj))
             
         
 class TestGenerateReactions(unittest.TestCase):
