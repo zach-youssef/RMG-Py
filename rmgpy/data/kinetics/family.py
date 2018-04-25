@@ -2250,19 +2250,17 @@ class KineticsFamily(Database):
         comp = []
         newInds = []
         kinetics = self.getTemplateKinetics(oldlabel)
-        oldgrp = self.groups.entries[oldlabel].item
         
-        for i,rxn in enumerate(rxns): #lot of potential for speed up in or related to this function
-            rmol = rxn.reactants[0].molecule[0]
-            for reactant in rxn.reactants[1:]:
-                rmol.merge(reactant.molecule[0])
-            if not rmol.isSubgraphIsomorphic(oldgrp,generateInitialMap=True, saveOrder=True):
+        for i,rxn in enumerate(rxns):
+            if rxn.is_forward:
+                rmol = rxn.reactants[0].molecule[0]
+                for reactant in rxn.reactants[1:]:
+                    rmol.merge(reactant.molecule[0])
+            elif not rxn.is_forward:
                 rmol = rxn.products[0].molecule[0]
                 for product in rxn.products[1:]:
                     rmol.merge(product.molecule[0])
-                if not rmol.isSubgraphIsomorphic(oldgrp,generateInitialMap=True, saveOrder=True):
-                    raise ValueError, 'cant work out training reaction direction'
-    
+            
             if rmol.isSubgraphIsomorphic(newgrp,generateInitialMap=True, saveOrder=True):
                 new.append(kinetics[i])
                 newInds.append(i)
