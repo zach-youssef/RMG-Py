@@ -81,6 +81,7 @@ class Reaction:
     `pairs`             ``list``                    Reactant-product pairings to use in converting reaction flux to species flux
     `has_pdep_route`    ``bool``                    ``True`` if the reaction has an additional PDep pathway, ``False`` if not (by default), used for LibraryReactions
     `comment`           ``str``                     A description of the reaction source (optional)
+    `is_forward`        ``bool``                    Indicates if the reaction was generated in the forward (true) or reverse (false)
     =================== =========================== ============================
     
     """
@@ -98,7 +99,8 @@ class Reaction:
                  degeneracy=1,
                  pairs=None,
                  has_pdep_route=False,
-                 comment=''
+                 comment='',
+                 is_forward=None,
                  ):
         self.index = index
         self.label = label
@@ -114,7 +116,8 @@ class Reaction:
         self.has_pdep_route = has_pdep_route
         self.comment = comment
         self.k_effective_cache = {}
-
+        self.is_forward = is_forward
+        
     def __repr__(self):
         """
         Return a string representation that can be used to reconstruct the

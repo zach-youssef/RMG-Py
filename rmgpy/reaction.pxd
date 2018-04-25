@@ -52,6 +52,7 @@ cdef class Reaction:
     cdef public bint has_pdep_route
     cdef public str comment
     cdef public dict k_effective_cache
+    cdef public bint is_forward
     
     cpdef bint isIsomerization(self)
 
