@@ -51,7 +51,7 @@ from rmgpy.exceptions import ForbiddenStructureException
 from rmgpy.data.kinetics.depository import DepositoryReaction
 from rmgpy.data.kinetics.family import KineticsFamily, TemplateReaction
 from rmgpy.data.kinetics.library import KineticsLibrary, LibraryReaction
-
+from rmgpy.data.rmg import getDB
 from rmgpy.kinetics import KineticsData
 import rmgpy.data.rmg
 from .react import reactAll
@@ -1020,10 +1020,11 @@ class CoreEdgeReactionModel:
         """
 
         assert spec not in self.core.species, "Tried to add species {0} to core, but it's already there".format(spec.label)
-
+        forbidden = getDB('forbidden')
+        forbid = forbidden.isMoleculeForbidden(spec.molecule[0])
         # Add the species to the core
-        self.core.species.append(spec)
-        
+        if not forbid:
+            self.core.species.append(spec)
         rxnList = []
         if spec in self.edge.species:
 
@@ -1040,12 +1041,20 @@ class CoreEdgeReactionModel:
                 for product in rxn.products:
                     if product not in self.core.species: allCore = False
                 if allCore: rxnList.append(rxn)
+            
+            if not forbid:
+                # Move any identified reactions to the core
+                for rxn in rxnList:
+                    self.addReactionToCore(rxn)
+                    logging.debug("Moving reaction from edge to core: {0}".format(rxn))
+                
+                return rxnList
+            else:
+                for rxn in rxnList:
+                    self.edge.reactions.remove(rxn)
+                    logging.debug("Removing Forbidden reaction from edge: {0}".format(rxn))
 
-            # Move any identified reactions to the core
-            for rxn in rxnList:
-                self.addReactionToCore(rxn)
-                logging.debug("Moving reaction from edge to core: {0}".format(rxn))
-        return rxnList
+                return []
 
     def addSpeciesToEdge(self, spec):
         """
