@@ -1058,7 +1058,7 @@ class CoreEdgeReactionModel:
                     self.edge.reactions.remove(rxn)
                     logging.debug("Removing Forbidden reaction from edge: {0}".format(rxn))
 
-                return []
+                return rxnList
 
     def addSpeciesToEdge(self, spec):
         """
