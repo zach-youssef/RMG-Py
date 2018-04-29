@@ -1024,6 +1024,7 @@ class CoreEdgeReactionModel:
         for mol in spec.molecule:
             forbid = forbidden.isMoleculeForbidden(mol)
             if forbid:
+                logging.info('Species {0} being added to core was forbidden'.format(spec.label))
                 break
             
         # Add the species to the core
