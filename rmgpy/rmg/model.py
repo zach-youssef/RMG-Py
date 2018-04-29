@@ -1021,15 +1021,13 @@ class CoreEdgeReactionModel:
 
         assert spec not in self.core.species, "Tried to add species {0} to core, but it's already there".format(spec.label)
         forbidden = getDB('forbidden')
-        for mol in spec.molecule:
-            forbid = forbidden.isMoleculeForbidden(mol)
-            if forbid:
-                logging.info('Species {0} being added to core was forbidden'.format(spec.label))
-                break
+        forbid = forbidden.isMoleculeForbidden(spec.molecule[0])
+        if forbid:
+            logging.info('Species {0} being added to core was forbidden'.format(spec.label))
+
             
         # Add the species to the core
-        if not forbid:
-            self.core.species.append(spec)
+        self.core.species.append(spec)
         rxnList = []
         if spec in self.edge.species:
 
@@ -1055,9 +1053,10 @@ class CoreEdgeReactionModel:
                 
                 return rxnList
             else:
+                self.core.species.remove(spec)
                 for rxn in rxnList:
                     self.edge.reactions.remove(rxn)
-                    logging.debug("Removing Forbidden reaction from edge: {0}".format(rxn))
+                    logging.info("Removing Forbidden reaction from edge: {0}".format(rxn))
 
                 return rxnList
 
