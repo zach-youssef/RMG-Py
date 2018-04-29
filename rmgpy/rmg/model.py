@@ -1021,7 +1021,11 @@ class CoreEdgeReactionModel:
 
         assert spec not in self.core.species, "Tried to add species {0} to core, but it's already there".format(spec.label)
         forbidden = getDB('forbidden')
-        forbid = forbidden.isMoleculeForbidden(spec.molecule[0])
+        for mol in spec.molecule:
+            forbid = forbidden.isMoleculeForbidden(mol)
+            if forbid:
+                break
+            
         # Add the species to the core
         if not forbid:
             self.core.species.append(spec)
