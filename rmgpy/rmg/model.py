@@ -586,8 +586,10 @@ class CoreEdgeReactionModel:
                     display(newSpecies) # if running in IPython --pylab mode, draws the picture!
 
                 # Add new species
-                reactionsMovedFromEdge = self.addSpeciesToCore(newSpecies)
-
+                reactionsMovedFromEdge,forbid = self.addSpeciesToCore(newSpecies)
+                
+                if forbid:
+                    return 
             elif isinstance(newObject, tuple) and isinstance(newObject[0], PDepNetwork) and self.pressureDependence:
 
                 pdepNetwork, newSpecies = newObject
@@ -1051,14 +1053,15 @@ class CoreEdgeReactionModel:
                     self.addReactionToCore(rxn)
                     logging.debug("Moving reaction from edge to core: {0}".format(rxn))
                 
-                return rxnList
+                return rxnList,forbid
             else:
                 self.core.species.remove(spec)
                 for rxn in rxnList:
                     self.edge.reactions.remove(rxn)
                     logging.info("Removing Forbidden reaction from edge: {0}".format(rxn))
 
-                return rxnList
+                return rxnList,forbid
+        return rxnList,forbid
 
     def addSpeciesToEdge(self, spec):
         """
