@@ -1027,14 +1027,13 @@ class CoreEdgeReactionModel:
 
         # check RMG globally forbidden structures
         if forbidden_structures.isMoleculeForbidden(spec.molecule[0]):
-            self.edge.species.remove(spec)
+            
             rxnList = []
             if spec in self.edge.species:
-    
+                self.core.species.append(spec)
                 # If species was in edge, remove it
                 logging.debug("Removing species {0} from edge.".format(spec))
                 self.edge.species.remove(spec)
-    
                 # Search edge for reactions that now contain only core species;
                 # these belong in the model core and will be moved there
                 for rxn in self.edge.reactions:
@@ -1044,7 +1043,8 @@ class CoreEdgeReactionModel:
                     for product in rxn.products:
                         if product not in self.core.species: allCore = False
                     if allCore: rxnList.append(rxn)
-    
+                
+                self.core.species.remove(spec)
                 # Move any identified reactions to the core
                 for rxn in rxnList:
                     self.edge.reactions.remove(rxn)
