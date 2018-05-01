@@ -1020,7 +1020,16 @@ class CoreEdgeReactionModel:
         """
 
         assert spec not in self.core.species, "Tried to add species {0} to core, but it's already there".format(spec.label)
+        
+        from rmgpy.data.rmg import getDB
+        
+        forbidden_structures = getDB('forbidden')
 
+        # check RMG globally forbidden structures
+        if forbidden_structures.isMoleculeForbidden(spec.molecule[0]):
+            self.edge.species.remove(spec)
+            return []
+        
         # Add the species to the core
         self.core.species.append(spec)
         
