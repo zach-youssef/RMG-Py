@@ -1049,7 +1049,7 @@ class CoreEdgeReactionModel:
                 for rxn in rxnList:
                     self.edge.reactions.remove(rxn)
                     logging.debug("Removing Edge Reaction: {0}".format(rxn))
-                return []
+                return rxnList
         
         # Add the species to the core
         self.core.species.append(spec)
