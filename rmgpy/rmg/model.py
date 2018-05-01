@@ -1027,7 +1027,9 @@ class CoreEdgeReactionModel:
 
         # check RMG globally forbidden structures
         if forbidden_structures.isMoleculeForbidden(spec.molecule[0]):
-            self.edge.species.remove(spec)
+            if spec in self.edge.species:
+                logging.info('Removing species {0} from edge as is forbidden'.format(spec))
+                self.edge.species.remove(spec)
             return []
         
         # Add the species to the core
