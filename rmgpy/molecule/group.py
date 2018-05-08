@@ -1522,7 +1522,7 @@ class Group(Graph):
                 if atom.label and atom.label != '':
                     L = [a for a in other.atoms if a.label == atom.label]
                     initialMap[atom] = L[0]
-            if not self.isMappingValid(other,initialMap):
+            if not self.isMappingValid(other,initialMap,subgraphCheck=True):
                 return False
                 
         if self.multiplicity:
