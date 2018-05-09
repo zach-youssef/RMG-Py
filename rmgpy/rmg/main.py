@@ -52,7 +52,7 @@ from rmgpy.molecule import Molecule
 from rmgpy.solver.base import TerminationTime, TerminationConversion
 from rmgpy.solver.simple import SimpleReactor
 from rmgpy.data.rmg import RMGDatabase
-from rmgpy.exceptions import ForbiddenStructureException, DatabaseError
+from rmgpy.exceptions import ForbiddenStructureException, DatabaseError, CoreError
 from rmgpy.data.kinetics.library import KineticsLibrary, LibraryReaction
 from rmgpy.data.kinetics.family import KineticsFamily, TemplateReaction
 
@@ -76,7 +76,6 @@ from rmgpy.stats import ExecutionStatsWriter
 from rmgpy.thermo.thermoengine import submit
 from rmgpy.tools.simulate import plot_sensitivity
 from cantera import ck2cti
-from rmgpy.exceptions import CoreError
 ################################################################################
 
 solvent = None
@@ -142,6 +141,10 @@ class RMG(util.Subject):
         self.clear()
         self.modelSettingsList = []
         self.simulatorSettingsList = []
+        self.Tmin = 0.0
+        self.Tmax = 0.0
+        self.Pmin = 0.0
+        self.Pmax = 0.0
     
     def clear(self):
         """
@@ -556,15 +559,16 @@ class RMG(util.Subject):
         self.register_listeners()
 
         self.done = False
-        
-        Tlist = []
-        for x in self.reactionSystems:
-            if x.Trange:
-                Tlist.append(x.Trange[1].value_si)
-            elif x.T:
-                Tlist.append(x.T.value_si)
-                
-        self.Tmax = max(Tlist)
+
+        # determine min and max values for T and P (don't determine P values for liquid reactors)
+        self.Tmin = min([r_sys.Trange[0] if r_sys.Trange else r_sys.T for r_sys in self.reactionSystems]).value_si
+        self.Tmax = max([r_sys.Trange[1] if r_sys.Trange else r_sys.T for r_sys in self.reactionSystems]).value_si
+        try:
+            self.Pmin = min([x.Prange[0] if x.Prange else x.P for x in self.reactionSystems]).value_si
+            self.Pmax = max([x.Prange[1] if x.Prange else x.P for x in self.reactionSystems]).value_si
+        except AttributeError:
+            # For LiquidReactor, Pmin and Pmax remain with the default value of `None`
+            pass
         
         self.nSimsTerms = [0 for i in xrange(len(self.reactionSystems))]
         
@@ -843,6 +847,27 @@ class RMG(util.Subject):
                 )
                 
                 plot_sensitivity(self.outputDirectory, index, reactionSystem.sensitiveSpecies)
+
+        # Check all core reactions (in both directions) for collision limit violation
+        logging.info("Checking core reactions for collision rate limit violators...")
+        violators = []
+        for rxn in self.reactionModel.core.reactions:
+            f_violator, r_violator = rxn.check_collision_limit_violation(t_min=self.Tmin, t_max=self.Tmax,
+                                                            p_min=self.Pmin, p_max=self.Pmax)
+            if f_violator is not None:
+                violators.append(f_violator)
+            if r_violator is not None:
+                violators.append(r_violator)
+        if len(violators):
+            logging.info("\n")
+            logging.warning("{0} CORE reactions violate the collision rate limit!"
+                            " See the 'collision_rate_violators.log' for details.\n\n".format(len(violators)))
+            with open('collision_rate_violators.log', 'w') as violators_f:
+                violators_f.write('Collision rate limit violators report:\n\n')
+                for violator in violators:
+                    violators_f.write('{0}\nDirection: {1}\n\n'.format(violator[0], violator[1]))
+        else:
+            logging.info("No collision rate violators found.")
 
         # generate Cantera files chem.cti & chem_annotated.cti in a designated `cantera` output folder
         try:
