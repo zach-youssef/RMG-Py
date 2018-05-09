@@ -109,4 +109,8 @@ cdef class Reaction:
 
     cpdef ensure_species(self, bint reactant_resonance=?, bint product_resonance=?)
 
+    cpdef get_reduced_mass(self, bint reverse=?)
+
+    cpdef get_mean_sigma_and_epsilon(self, bint reverse=?)
+
 cpdef bint _isomorphicSpeciesList(list list1, list list2, bint checkIdentical=?, bint checkOnlyLabel=?)

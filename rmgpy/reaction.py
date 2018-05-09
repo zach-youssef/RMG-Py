@@ -58,6 +58,7 @@ from rmgpy.kinetics import KineticsData, ArrheniusEP, ThirdBody, Lindemann, Troe
 from rmgpy.pdep.reaction import calculateMicrocanonicalRateCoefficient
 from rmgpy.exceptions import ReactionError
 from rmgpy.kinetics.diffusionLimited import diffusionLimiter
+from rmgpy.data import transport
 
 ################################################################################
 
@@ -1110,6 +1111,44 @@ class Reaction:
             self.reverse.ensure_species()
         except AttributeError:
             pass
+
+    def get_reduced_mass(self, reverse=False):
+        """
+        Returns the reduced mass of the reactants if reverse is ``False``
+        Returns the reduced mass of the products if reverse is ``True``
+        """
+        if reverse:
+            mass_list = [spc.molecule[0].getMolecularWeight() for spc in self.products]
+        else:
+            mass_list = [spc.molecule[0].getMolecularWeight() for spc in self.reactants]
+        reduced_mass = reduce((lambda x, y: x * y), mass_list) / sum(mass_list)
+        return reduced_mass
+
+    def get_mean_sigma_and_epsilon(self, reverse=False):
+        """
+        Calculates the collision diameter (sigma) using an arithmetic mean
+        Calculates the well depth (epsilon) using a geometric mean
+        If reverse is ``False`` the above is calculated for the reactants, otherwise for the products
+        """
+        sigmas = []
+        epsilons = []
+        if reverse:
+            for spc in self.products:
+                trans = spc.getTransportData()
+                sigmas.append(trans.sigma.value_si)
+                epsilons.append(trans.epsilon.value_si)
+                num_of_spcs = len(self.products)
+        else:
+            for spc in self.reactants:
+                trans = spc.getTransportData()
+                sigmas.append(trans.sigma.value_si)
+                epsilons.append(trans.epsilon.value_si)
+                num_of_spcs = len(self.reactants)
+        if any([x == 0 for x in sigmas + epsilons]):
+            raise ValueError
+        mean_sigmas = sum(sigmas) / num_of_spcs
+        mean_epsilons = reduce((lambda x, y: x * y), epsilons) ** (1 / sum(epsilons))
+        return mean_sigmas, mean_epsilons
 
 def _isomorphicSpeciesList(list1, list2, checkIdentical=False, checkOnlyLabel = False):
     """
