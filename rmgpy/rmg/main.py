@@ -39,7 +39,7 @@ import logging
 import time
 import shutil
 import numpy
-import gc
+import gc, math
 import copy
 from copy import deepcopy
 
@@ -48,13 +48,14 @@ from rmgpy.molecule import Molecule
 from rmgpy.solver.base import TerminationTime, TerminationConversion
 from rmgpy.solver.simple import SimpleReactor
 from rmgpy.data.rmg import RMGDatabase
-from rmgpy.exceptions import ForbiddenStructureException, DatabaseError
+from rmgpy.exceptions import ForbiddenStructureException, DatabaseError, CoreError, ReactionError
 from rmgpy.data.kinetics.library import KineticsLibrary, LibraryReaction
 from rmgpy.data.kinetics.family import KineticsFamily, TemplateReaction
 
 from rmgpy.data.thermo import ThermoLibrary
 from rmgpy.data.base import Entry
 from rmgpy import settings
+from rmgpy import constants
 
 from rmgpy.kinetics.diffusionLimited import diffusionLimiter
 
@@ -72,7 +73,6 @@ from rmgpy.stats import ExecutionStatsWriter
 from rmgpy.thermo.thermoengine import submit
 from rmgpy.tools.simulate import plot_sensitivity
 from cantera import ck2cti
-from rmgpy.exceptions import CoreError
 ################################################################################
 
 solvent = None
@@ -540,8 +540,11 @@ class RMG(util.Subject):
         self.register_listeners()
 
         self.done = False
-        
-        self.Tmax = max([x.T for x in self.reactionSystems]).value_si
+
+        self.Tmin = min([x.T if not isinstance(x.T,list) else x.T[0] for x in self.reactionSystems]).value_si
+        self.Tmax = max([x.T if not isinstance(x.T,list) else x.T[1] for x in self.reactionSystems]).value_si
+        self.Pmin = min([x.P if not isinstance(x.P,list) else x.P[0] for x in self.reactionSystems]).value_si
+        self.Pmax = max([x.P if not isinstance(x.P,list) else x.P[1] for x in self.reactionSystems]).value_si
         
         # Initiate first reaction discovery step after adding all core species
         if self.filterReactions:
@@ -796,6 +799,9 @@ class RMG(util.Subject):
                 
                 plot_sensitivity(self.outputDirectory, index, reactionSystem.sensitiveSpecies)
 
+        # Check all core reactions (in both directions) for collision limit violation
+        self.check_collision_limit_violation()
+
         # generate Cantera files chem.cti & chem_annotated.cti in a designated `cantera` output folder
         try:
             self.generateCanteraFiles(os.path.join(self.outputDirectory, 'chemkin', 'chem.inp'))
@@ -814,6 +820,81 @@ class RMG(util.Subject):
         logging.info('The final model edge has %s species and %s reactions' % (edgeSpec, edgeReac))
         
         self.finish()
+
+    def check_collision_limit_violation(self):
+        """
+        Warn if a core reaction violates the collision limit rate in either the forward or reverse direction
+        at the relevant extreme T/P conditions. Assuming a monotonic behavious of the kinetics.
+        """
+        logging.info("Checking core reactions for collision rate limit violators...")
+        conditions = [[self.Tmin, self.Pmin]]
+        if self.Tmin != self.Tmax:
+            conditions.append([self.Tmax, self.Pmin])
+        pdep_conditions = conditions
+        if self.Pmax != self.Pmin:
+            pdep_conditions.append([self.Tmin, self.Pmax])
+            if self.Tmin != self.Tmax:
+                pdep_conditions.append([self.Tmax, self.Pmax])
+        violators = []
+        for rxn in self.reactionModel.core.reactions:
+            logging.debug("Checking whether reaction {0} violates the collision rate limit...".format(rxn))
+            kf_list = []
+            kr_list = []
+            if len(rxn.reactants) == 2:
+                collision_limit = []
+                for condition in conditions:
+                    collision_limit.append([self.calculate_coll_limit(T=condition[0], rxn=rxn, reverse=False)])
+                    if not rxn.kinetics.isPressureDependent():
+                        kf_list.append(rxn.getRateCoefficient(condition[0], condition[1]))
+                if rxn.kinetics.isPressureDependent():
+                    for condition in pdep_conditions:
+                        kf_list.append(rxn.getRateCoefficient(condition[0], condition[1]))
+                    if len(pdep_conditions) > len(conditions):
+                        collision_limit = collision_limit * 2
+                for i, k in enumerate(kf_list):
+                    if k < collision_limit[i]:
+                        violators.append([rxn,'forward'])
+                        logging.debug("Reaction {0} violates the collision limit rate in the"
+                                        " forward direction!".format(rxn))
+                        break
+            if len(rxn.products) == 2:
+                collision_limit = []
+                for condition in conditions:
+                    collision_limit.append([self.calculate_coll_limit(T=condition[0], rxn=rxn, reverse=True)])
+                    if not rxn.kinetics.isPressureDependent():
+                        kf_list.append(rxn.generateReverseRateCoefficient().getRateCoefficient(condition[0], condition[1]))
+                if rxn.kinetics.isPressureDependent():
+                    for condition in pdep_conditions:
+                        kf_list.append(rxn.generateReverseRateCoefficient().getRateCoefficient(condition[0], condition[1]))
+                    if len(pdep_conditions) > len(conditions):
+                        collision_limit = collision_limit * 2
+                for i, k in enumerate(kf_list):
+                    if k < collision_limit[i]:
+                        violators.append([rxn,'reverse'])
+                        logging.debug("Reaction {0} violates the collision limit rate in the"
+                                        " reverse direction!".format(rxn))
+                        break
+        if len(violators):
+            with open('collision_rate_violators.log', 'w') as violators_f:
+                violators_f.write('Collision rate limit violators report:\n\n')
+                for violator in violators:
+                    violators_f.write('Reaction:\n{0}\nDirection: {1}\n\n'.format(violator[0],violator[1]))
+            logging.warning("\n\n{0} CORE reactions were found to violate the collision rate limit!"
+                            "See the 'collision_rate_violators.log' for details.\n\n".format(len(violators)))
+
+    def calculate_coll_limit(self, T, rxn, reverse=False):
+        """
+        Calculate the collision limit rate for the given temperature
+        implemented as recommended in Wang et al. doi 10.1016/j.combustflame.2017.08.005 (Eq. 1)
+        """
+        reduced_mass = rxn.get_reduced_mass(reverse)
+        sigma, epsilon = rxn.get_mean_sigma_and_epsilon(reverse)
+        Tr = T * constants.kB * constants.Na / epsilon
+        reduced_coll_integral = 1.16145*Tr**(-0.14874)+0.52487*math.exp(-0.7732*Tr)+2.16178*math.exp(-2.437887*Tr)
+        k_coll = (math.sqrt(8 * math.pi * constants.kB * T * constants.Na / reduced_mass) * sigma ** 2
+                  * reduced_coll_integral * constants.Na)
+        return k_coll
+
     
     def check_model(self):
         """
