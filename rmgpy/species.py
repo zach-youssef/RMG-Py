@@ -109,6 +109,8 @@ class Species(object):
         self.symmetryNumber = symmetryNumber
         self.isSolvent = False
         self.creationIteration = creationIteration
+        self._fingerprint = None
+        self._inchi = None
         # Check multiplicity of each molecule is the same
         if molecule is not None and len(molecule)>1:
             mult = molecule[0].multiplicity
@@ -157,11 +159,53 @@ class Species(object):
         """
         return (Species, (self.index, self.label, self.thermo, self.conformer, self.molecule, self.transportData, self.molecularWeight, self.energyTransferModel, self.reactive, self.props))
 
-    def getMolecularWeight(self):
+    def is_same(self, other):
+        """
+        Chemical identity comparison via InChI strings.
+
+        Can be compared with either Species or Molecule objects.
+        """
+        if not self.molecule:
+            raise ValueError('Species must have molecule attribute to compare chemical identity.')
+        elif not isinstance(other, Molecule) and not isinstance(other, Species):
+            raise ValueError('Can only compare with Molecule or Species objects.')
+        elif self.multiplicity == other.multiplicity and self.InChI == other.InChI:
+            return True
+        else:
+            return False
+
+    @property
+    def fingerprint(self):
+        """Fingerprint of this species, taken from molecule attribute. Read-only."""
+        if self._fingerprint is None:
+            if self.molecule:
+                self._fingerprint = self.molecule[0].fingerprint
+        return self._fingerprint
+
+    @property
+    def InChI(self):
+        """InChI string representation of this species. Read-only."""
+        if self._inchi is None:
+            if self.molecule:
+                self._inchi = self.molecule[0].InChI
+        return self._inchi
+
+    @property
+    def multiplicity(self):
+        """Fingerprint of this species, taken from molecule attribute. Read-only."""
+        if self.molecule:
+            return self.molecule[0].multiplicity
+        else:
+            return None
+
+    @property
+    def molecularWeight(self):
+        """The molecular weight of the species. (Note: value_si is in kg/molecule not kg/mole)"""
         return self._molecularWeight
-    def setMolecularWeight(self, value):
+
+    @molecularWeight.setter
+    def molecularWeight(self, value):
         self._molecularWeight = quantity.Mass(value)
-    molecularWeight = property(getMolecularWeight, setMolecularWeight, """The molecular weight of the species. (Note: value_si is in kg/molecule not kg/mole)""")
 
     def generate_resonance_structures(self, keepIsomorphic=True):
         """
@@ -677,11 +721,14 @@ class TransitionState():
         """
         return (TransitionState, (self.label, self.conformer, self.frequency, self.tunneling, self.degeneracy))
 
-    def getFrequency(self):
+    @property
+    def frequency(self):
+        """The negative frequency of the first-order saddle point."""
         return self._frequency
-    def setFrequency(self, value):
+
+    @frequency.setter
+    def frequency(self, value):
         self._frequency = quantity.Frequency(value)
-    frequency = property(getFrequency, setFrequency, """The negative frequency of the first-order saddle point.""")
 
     def getPartitionFunction(self, T):
         """

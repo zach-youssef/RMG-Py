@@ -128,10 +128,15 @@ cdef class Molecule(Graph):
     cdef public int multiplicity
     cdef public object rdMol
     cdef public int rdMolConfId
-    cdef str _fingerprint
-    cdef public str InChI
     cdef public dict props
-    
+    cdef str _fingerprint
+    cdef str _inchi
+    cdef str _smiles
+
+    cpdef bint is_equal(self, Molecule other)
+
+    cpdef bint is_same(self, other)
+
     cpdef addAtom(self, Atom atom)
 
     cpdef addBond(self, Bond bond)
