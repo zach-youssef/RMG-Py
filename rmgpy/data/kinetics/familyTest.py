@@ -42,6 +42,7 @@ from rmgpy.data.kinetics.family import TemplateReaction
 from rmgpy.data.rmg import RMGDatabase
 from rmgpy.molecule import Molecule
 from rmgpy.species import Species
+from rmgpy.molecule.group import Group
 
 
 ###################################################
@@ -705,8 +706,18 @@ class TestTreeGeneration(unittest.TestCase):
                             logging.error('unpaired electron regularization dimension missed')
                             vioObj.add((tuple(indc),tuple(us),tuple(u),typ))
             self.assertTrue(len(vioObj) <= 1,'there were {0} regularization violations at, {1}'.format(len(vioObj),vioObj))
-            
-        
+    
+    def test_FRegularizationStructure(self):
+        """
+        test that the tree is structured properly after regularization
+        """
+        self.family.regularize()
+        for entry in self.family.groups.entries.itervalues():
+            if isinstance(entry.item,Group):
+                for child in entry.children:
+                    if isinstance(child.item,Group):
+                        self.assertTrue(child.item.isSubgraphIsomorphic(entry.item,generateInitialMap=True,saveOrder=True))
+    
 class TestGenerateReactions(unittest.TestCase):
 
     @classmethod
