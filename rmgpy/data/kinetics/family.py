@@ -1296,7 +1296,11 @@ class KineticsFamily(Database):
             struc.update()
             reactant_net_charge += struc.getNetCharge()
         for struc in productStructures:
-            struc.update()
+            # If product structures are Molecule objects, update their atom types
+            if isinstance(struc, Molecule):
+                struc.update()
+            else:
+                struc.resetRingMembership()
             product_net_charge += struc.getNetCharge()
         if reactant_net_charge != product_net_charge:
             logging.debug('The net charge of the reactants {0} differs from the net charge of the products {1} in'
@@ -1317,13 +1321,6 @@ class KineticsFamily(Database):
             if not productStructures[0].containsLabeledAtom('*1') and\
                     productStructures[1].containsLabeledAtom('*1'):
                 productStructures.reverse()
-
-        # If product structures are Molecule objects, update their atom types
-        for struct in productStructures:
-            if isinstance(struct, Molecule):
-                struct.update()
-            else:
-                struct.resetRingMembership()
 
         # Return the product structures
         return productStructures
