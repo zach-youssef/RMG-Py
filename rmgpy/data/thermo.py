@@ -1431,9 +1431,9 @@ class ThermoDatabase(object):
                 indices = H298.argsort()
             indices = numpy.array([indices[i] for i in xrange(len(indices)) if species.molecule[indices[i]].reactive] +\
                         [indices[i] for i in xrange(len(indices)) if not species.molecule[indices[i]].reactive])
-            return indices
         else:
-            return [0]
+            indices = [0]
+        return indices
 
     def estimateRadicalThermoViaHBI(self, molecule, stableThermoEstimator ):
         """
