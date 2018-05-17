@@ -58,4 +58,4 @@ cpdef list find_N5dc_delocalization_paths(Atom atom1)
 
 cpdef bint is_NOS_able_to_gain_lone_pair(Atom atom)
 
-cpdef bint is_NOS_able_to_loose_lone_pair(Atom atom)
+cpdef bint is_NOS_able_to_lose_lone_pair(Atom atom)
