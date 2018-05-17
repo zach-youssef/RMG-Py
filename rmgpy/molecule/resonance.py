@@ -38,7 +38,7 @@ functions for generating each type of resonance structure.
 Currently supported resonance types:
 
 - All species:
-    - ``generate_ally_delocalization_resonance_structures``: single radical shift with double or triple bond
+    - ``generate_allyl_delocalization_resonance_structures``: single radical shift with double or triple bond
     - ``generate_lone_pair_radical_resonance_structures``: single radical shift with lone pair
     - ``generate_lone_pair_multiple_bond_resonance_structures``: multiple bond shift with lone pair
     - ``generate_lone_pair_radical_multiple_bond_resonance_structures``: multiple bond and radical shift with lone pair and radical
@@ -76,7 +76,7 @@ def populate_resonance_algorithms(features=None):
 
     if features is None:
         method_list = [
-            generate_ally_delocalization_resonance_structures,
+            generate_allyl_delocalization_resonance_structures,
             generate_lone_pair_radical_resonance_structures,
             generate_lone_pair_multiple_bond_resonance_structures,
             generate_lone_pair_radical_multiple_bond_resonance_structures,
@@ -92,7 +92,7 @@ def populate_resonance_algorithms(features=None):
         # If the molecule was falsely identified as aromatic, then isArylRadical will still accurately capture
         # cases where the radical is in an orbital that is orthogonal to the pi orbitals.
         if features['isRadical'] and not features['isAromatic'] and not features['isArylRadical']:
-            method_list.append(generate_ally_delocalization_resonance_structures)
+            method_list.append(generate_allyl_delocalization_resonance_structures)
         if features['hasNitrogen']:
             method_list.append(generate_N5ddc_N5tc_resonance_structures)
             method_list.append(generate_N5dc_resonance_structures)
@@ -208,7 +208,7 @@ def generate_resonance_structures(mol, clar_structures=True, keep_isomorphic=Fal
             if features['isPolycyclicAromatic']:
                 if clar_structures:
                     _generate_resonance_structures(new_mol_list, [generate_kekule_structure], keep_isomorphic)
-                    _generate_resonance_structures(new_mol_list, [generate_ally_delocalization_resonance_structures], keep_isomorphic)
+                    _generate_resonance_structures(new_mol_list, [generate_allyl_delocalization_resonance_structures], keep_isomorphic)
                     _generate_resonance_structures(new_mol_list, [generate_clar_structures], keep_isomorphic)
                     # Remove non-aromatic structures under the assumption that they aren't important resonance contributors
                     new_mol_list = [m for m in new_mol_list if m.isAromatic()]
@@ -217,7 +217,7 @@ def generate_resonance_structures(mol, clar_structures=True, keep_isomorphic=Fal
             else:
                 _generate_resonance_structures(new_mol_list, [generate_kekule_structure,
                                                             generate_opposite_kekule_structure], keep_isomorphic)
-                _generate_resonance_structures(new_mol_list, [generate_ally_delocalization_resonance_structures], keep_isomorphic)
+                _generate_resonance_structures(new_mol_list, [generate_allyl_delocalization_resonance_structures], keep_isomorphic)
         elif features['isPolycyclicAromatic']:
             if clar_structures:
                 _generate_resonance_structures(new_mol_list, [generate_clar_structures], keep_isomorphic)
@@ -311,7 +311,7 @@ def _generate_resonance_structures(mol_list, method_list, keep_isomorphic=False,
     return mol_list
 
 
-def generate_ally_delocalization_resonance_structures(mol):
+def generate_allyl_delocalization_resonance_structures(mol):
     """
     Generate all of the resonance structures formed by one allyl radical shift.
 
@@ -652,7 +652,7 @@ def generate_aromatic_resonance_structures(mol, features=None):
             kekuleList = generate_kekule_structure(molecule)
         else:
             kekuleList = [molecule]
-        _generate_resonance_structures(kekuleList, [generate_ally_delocalization_resonance_structures])
+        _generate_resonance_structures(kekuleList, [generate_allyl_delocalization_resonance_structures])
 
         maxNum = 0
         mol_list = []

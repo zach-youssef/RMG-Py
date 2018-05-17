@@ -36,7 +36,7 @@ cpdef list generate_resonance_structures(Molecule mol, bint clar_structures=?, b
 
 cpdef list _generate_resonance_structures(list mol_list, list method_list, bint keep_isomorphic=?, bint copy=?)
 
-cpdef list generate_ally_delocalization_resonance_structures(Molecule mol)
+cpdef list generate_allyl_delocalization_resonance_structures(Molecule mol)
 
 cpdef list generate_lone_pair_radical_resonance_structures(Molecule mol)
 

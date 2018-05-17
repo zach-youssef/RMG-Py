@@ -296,7 +296,7 @@ def find_lone_pair_radical_delocalization_paths(atom1):
         if ((atom1.isNitrogen() and atom1.radicalElectrons >= 1 and atom1.lonePairs in [0, 1])
                 or (atom1.isOxygen() and atom1.radicalElectrons >= 1 and atom1.lonePairs in [1, 2])
                 or (atom1.isSulfur() and atom1.radicalElectrons >= 1 and atom1.lonePairs in [0, 1, 2])):
-            for atom2, _ in atom1.edges.items():
+            for atom2 in atom1.edges.keys():
                 if ((atom2.isNitrogen() and atom2.lonePairs in [1, 2])
                         or (atom2.isOxygen() and atom2.lonePairs in [2, 3] and not atom1.isOxygen())  #avoid RO[::O.] <-> R[:O.+][:::O-], see RMG-Py #1223
                         or (atom2.isSulfur() and atom2.lonePairs in [1, 2, 3])):
@@ -329,7 +329,7 @@ def find_lone_pair_multiple_bond_delocalization_paths(atom1):
                 # Find paths in the direction <increasing> the bond order,
                 # atom1 must posses at least one lone pair to loose it
                 if ((bond12.isSingle() or bond12.isDouble())
-                        and is_NOS_able_to_loose_lone_pair(atom1)):
+                        and is_NOS_able_to_lose_lone_pair(atom1)):
                     paths.append([atom1, atom2, bond12, 1])  # direction = 1
                 # Find paths in the direction <decreasing> the bond order,
                 # atom1 gains a lone pair, hence cannot already have more than two lone pairs
@@ -361,7 +361,7 @@ def find_lone_pair_radical_multiple_bond_delocalization_paths(atom1):
             # Find paths in the direction <increasing> the bond order
             # atom1 must posses at least one lone pair to loose it, atom2 must be a radical
             if (atom2.radicalElectrons and (bond12.isSingle() or bond12.isDouble())
-                    and is_NOS_able_to_loose_lone_pair(atom1)):
+                    and is_NOS_able_to_lose_lone_pair(atom1)):
                 paths.append([atom1, atom2, bond12, 1])  # direction = 1
             # Find paths in the direction <decreasing> the bond order
             # atom1 gains a lone pair, hence cannot already have more than two lone pairs, and is also a radical
@@ -431,7 +431,7 @@ def find_N5dc_delocalization_paths(atom1):
         if atom2.radicalElectrons and bond12.isSingle() and not atom2.charge and is_NOS_able_to_gain_lone_pair(atom2):
             for atom3, bond23 in atom1.edges.items():
                 if (atom2 is not atom3 and bond23.isSingle() and atom3.charge < 0
-                        and is_NOS_able_to_loose_lone_pair(atom3)):
+                        and is_NOS_able_to_lose_lone_pair(atom3)):
                     paths.append([atom2, atom3])
                     return paths  # there could only be one such path per atom1, return if found
     return paths
@@ -440,22 +440,18 @@ def find_N5dc_delocalization_paths(atom1):
 def is_NOS_able_to_gain_lone_pair(atom):
     """
     Helper function
-    Return True if atom is N/O/S and is able to <gain> an additional lone pair, False otherwise
-    We don't allow O to be with no lone pairs
-    """
-    if (((atom.isNitrogen() or atom.isSulfur()) and atom.lonePairs in [0, 1, 2])
-                        or (atom.isOxygen() and atom.lonePairs in [1, 2])):
-        return True
-    return False
-
-
-def is_NOS_able_to_loose_lone_pair(atom):
-    """
-    Helper function
-    Return True if atom is N/O/S and is able to <loose> a lone pair, False otherwise
+    Returns True if atom is N/O/S and is able to <gain> an additional lone pair, False otherwise
     We don't allow O to remain with no lone pairs
     """
-    if (((atom.isNitrogen() or atom.isSulfur()) and atom.lonePairs in [1, 2, 3])
-                        or (atom.isOxygen() and atom.lonePairs in [2, 3])):
-        return True
-    return False
+    return (((atom.isNitrogen() or atom.isSulfur()) and atom.lonePairs in [0, 1, 2])
+                        or (atom.isOxygen() and atom.lonePairs in [1, 2]))
+
+
+def is_NOS_able_to_lose_lone_pair(atom):
+    """
+    Helper function
+    Returns True if atom is N/O/S and is able to <loose> a lone pair, False otherwise
+    We don't allow O to remain with no lone pairs
+    """
+    return (((atom.isNitrogen() or atom.isSulfur()) and atom.lonePairs in [1, 2, 3])
+                        or (atom.isOxygen() and atom.lonePairs in [2, 3]))
