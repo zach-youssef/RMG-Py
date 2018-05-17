@@ -259,18 +259,19 @@ def ensure_independent_atom_ids(input_species, resonance=True):
     if not independent_ids():
         logging.debug('identical atom ids found between species. regenerating')
         for species in input_species:
-            if all([mol.reactive for mol in species.molecule]):
-                mol = species.molecule[0]
-                mol.assignAtomIDs()
-                species.molecule = [mol]
-                # Remake resonance structures with new labels
-                if resonance:
-                    species.generate_resonance_structures(keep_isomorphic=True)
+            unreactive_mol_list = [mol for mol in species.molecule if not mol.reactive]
+            mol = species.molecule[0]
+            mol.assignAtomIDs()
+            species.molecule = [mol]
+            # Remake resonance structures with new labels
+            if resonance:
+                species.generate_resonance_structures(keep_isomorphic=True)
+            if len(unreactive_mol_list):
+                species.molecule.extend(unreactive_mol_list)
     elif resonance:
         # IDs are already independent, generate resonance structures if needed
         for species in input_species:
-            if len(species.molecule) == 1:
-                species.generate_resonance_structures(keep_isomorphic=True)
+            species.generate_resonance_structures(keep_isomorphic=True)
 
 
 def find_degenerate_reactions(rxnList, same_reactants=None, kinetics_database=None, kinetics_family=None):
