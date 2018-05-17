@@ -1,32 +1,32 @@
 #!/usr/bin/env python
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 
-################################################################################
-#
-#   RMG - Reaction Mechanism Generator
-#
-#   Copyright (c) 2002-2018 Prof. William H. Green (whgreen@mit.edu),
-#   Prof. Richard H. West (r.west@neu.edu) and the RMG Team (rmg_dev@mit.edu)
-#
-#   Permission is hereby granted, free of charge, to any person obtaining a
-#   copy of this software and associated documentation files (the 'Software'),
-#   to deal in the Software without restriction, including without limitation
-#   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-#   and/or sell copies of the Software, and to permit persons to whom the
-#   Software is furnished to do so, subject to the following conditions:
-#
-#   The above copyright notice and this permission notice shall be included in
-#   all copies or substantial portions of the Software.
-#
-#   THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-#   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-#   DEALINGS IN THE SOFTWARE.
-#
-################################################################################
+###############################################################################
+#                                                                             #
+# RMG - Reaction Mechanism Generator                                          #
+#                                                                             #
+# Copyright (c) 2002-2018 Prof. William H. Green (whgreen@mit.edu),           #
+# Prof. Richard H. West (r.west@neu.edu) and the RMG Team (rmg_dev@mit.edu)   #
+#                                                                             #
+# Permission is hereby granted, free of charge, to any person obtaining a     #
+# copy of this software and associated documentation files (the 'Software'),  #
+# to deal in the Software without restriction, including without limitation   #
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,    #
+# and/or sell copies of the Software, and to permit persons to whom the       #
+# Software is furnished to do so, subject to the following conditions:        #
+#                                                                             #
+# The above copyright notice and this permission notice shall be included in  #
+# all copies or substantial portions of the Software.                         #
+#                                                                             #
+# THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR  #
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,    #
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE #
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER      #
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING     #
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER         #
+# DEALINGS IN THE SOFTWARE.                                                   #
+#                                                                             #
+###############################################################################
 
 """
 This module contains methods for filtering a list of Molecules representing a single Species,
@@ -54,8 +54,8 @@ def filter_structures(mol_list, mark_unreactive=True):
     lone pairs. This method filters them out by minimizing the number of C/N/O/S atoms without a full octet.
     """
 
-    assert all([(mol.multiplicity == mol_list[0].multiplicity) for mol in mol_list]),\
-        "Cannot filter structures with different multiplicities!"
+    if not all([(mol.multiplicity == mol_list[0].multiplicity) for mol in mol_list]):
+        raise ValueError("Cannot filter structures with different multiplicities!")
 
     # Get an octet deviation list
     octet_deviation_list = get_octet_deviation_list(mol_list)
@@ -185,7 +185,7 @@ def charge_filtration(filtered_list, charge_span_list):
     positive charges will be assigned to less electronegative atoms. Also, opposite charges will be as close as possible
     to one another, and vice versa.
     If the species is a radical, we first check whether keeping an extra charge span separation might be important for
-    reactivity by relocating the radical site. If so, wee keep these structures.
+    reactivity by relocating the radical site. If so, we keep these structures.
     For example:
     - Both of NO2's resonance structures will be kept: [O]N=O <=> O=[N+.][O-]
     - NCO will only have two resonance structures [N.]=C=O <=> N#C[O.], and will loose the third structure which has
@@ -263,7 +263,6 @@ def charge_filtration(filtered_list, charge_span_list):
                 max_cumulative_similar_charge_distance = max([distances[1] for i, distances in
                                                     enumerate(charge_distance_list) if i not in indices_to_pop] or [0])
                 for i, distances in enumerate(charge_distance_list):
-                    # after generating the charge_distance_list, iterate through it to
                     if distances[0] < max_cumulative_similar_charge_distance:
                         indices_to_pop.append(i)
 
@@ -326,6 +325,6 @@ def check_reactive(filtered_list):
         logging.error('No reactive structures were attributed to species {0}'.format(filtered_list[0].toSMILES()))
         for mol in filtered_list:
             logging.info('Structure: {0}\n{1}Reactive: {2}'.format(mol.toSMILES(),mol.toAdjacencyList(),mol.reactive))
-            logging.info('\n')
+        logging.info('\n')
         raise AssertionError('Each species must have at least one reactive structure. Something probably went wrong'
                              ' when exploring resonance structures for species {0}'.format(filtered_list[0].toSMILES()))
