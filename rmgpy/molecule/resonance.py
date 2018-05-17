@@ -62,6 +62,7 @@ import rmgpy.molecule.pathfinder as pathfinder
 from rmgpy.exceptions import ILPSolutionError, KekulizationError, AtomTypeError
 from .element import PeriodicSystem
 import rmgpy.molecule.filtration as filtration
+from rmgpy.molecule.adjlist import Saturator
 
 
 def populate_resonance_algorithms(features=None):
@@ -820,18 +821,7 @@ def generate_isomorphic_resonance_structures(mol, saturate_h=False):
                    isomer=Molecule, newIsomer=Molecule, isom=Molecule, atom=Atom, a=Atom, b=Bond, newAtoms=list)
 
     if saturate_h:  # Add explicit hydrogen atoms to complete structure if desired
-        newAtoms = []
-        for atom in mol.vertices:
-            max_val_e = PeriodicSystem.valence_electrons[atom.symbol]
-            order = atom.getBondOrdersForAtom()
-            num_h_to_add = max_val_e - atom.radicalElectrons - 2 * atom.lonePairs - int(order) - atom.charge
-            for index in xrange(num_h_to_add):
-                a = Atom(element='H', radicalElectrons=0, charge=0, label='', lonePairs=0)
-                b = Bond(atom, a, 'S')
-                newAtoms.append(a)
-                atom.bonds[a] = b
-                a.bonds[atom] = b
-        mol.vertices.extend(newAtoms)
+        Saturator.saturate(mol.vertices)
 
     isomorphic_isomers = [mol]  # resonance isomers that are isomorphic to the parameter isomer.
 
@@ -860,8 +850,7 @@ def generate_isomorphic_resonance_structures(mol, saturate_h=False):
 
     if saturate_h:  # remove hydrogens before returning isomorphic_isomers
         for isomer in isomorphic_isomers:
-            hydrogens = filter(lambda at: at.number == 1, isomer.atoms)
-            [isomer.removeAtom(h) for h in hydrogens]
+            isomer.deleteHydrogens()
 
     return isomorphic_isomers
 
