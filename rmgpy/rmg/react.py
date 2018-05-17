@@ -148,11 +148,15 @@ def deflateReaction(rxn, molDict):
     object are populated with the value of the dictionary, either an
     integer index, or either a Species object.
     """
-    rxn.generatePairs()
     for spec in itertools.chain(rxn.reactants, rxn.products):
         if not spec.molecule[0] in molDict:
             molDict[spec.molecule[0]] = spec
 
     rxn.reactants = [molDict[spec.molecule[0]] for spec in rxn.reactants]
     rxn.products = [molDict[spec.molecule[0]] for spec in rxn.products]
-    rxn.pairs = [(molDict[reactant.molecule[0]], molDict[product.molecule[0]]) for reactant, product in rxn.pairs]
+    try:
+        rxn.pairs = [(molDict[reactant.molecule[0]], molDict[product.molecule[0]]) for reactant, product in rxn.pairs]
+    except ValueError:
+        rxn.generatePairs()
+        rxn.pairs = [(molDict[reactant.molecule[0]], molDict[product.molecule[0]]) for reactant, product in rxn.pairs]
+
