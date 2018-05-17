@@ -236,10 +236,8 @@ class Species(object):
         """
         for species in species_list:
             if isinstance(species, Species):
-                for molecule1 in self.molecule:
-                    for molecule2 in species.molecule:
-                        if molecule1.isIsomorphic(molecule2):
-                            return True
+                if self.isIsomorphic(species):
+                    return True
             else:
                 raise ValueError('Unexpected value "{0!r}" for species_list parameter;'
                                  ' should be a List of Species objects.'.format(species))
