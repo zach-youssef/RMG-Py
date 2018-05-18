@@ -157,6 +157,4 @@ def deflateReaction(rxn, molDict):
     try:
         rxn.pairs = [(molDict[reactant.molecule[0]], molDict[product.molecule[0]]) for reactant, product in rxn.pairs]
     except ValueError:
-        rxn.generatePairs()
-        rxn.pairs = [(molDict[reactant.molecule[0]], molDict[product.molecule[0]]) for reactant, product in rxn.pairs]
-
+        rxn.pairs = None
