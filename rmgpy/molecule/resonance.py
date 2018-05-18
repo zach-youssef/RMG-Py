@@ -60,7 +60,6 @@ from .molecule import Atom, Bond, Molecule
 from .kekulize import kekulize
 import rmgpy.molecule.pathfinder as pathfinder
 from rmgpy.exceptions import ILPSolutionError, KekulizationError, AtomTypeError
-from .element import PeriodicSystem
 import rmgpy.molecule.filtration as filtration
 from rmgpy.molecule.adjlist import Saturator
 
