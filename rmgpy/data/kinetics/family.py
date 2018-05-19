@@ -1485,13 +1485,14 @@ class KineticsFamily(Database):
         """
         reactionList = []
 
-        if all([mol.reactive for mol in reactants]):
-            # Forward direction (the direction in which kinetics is defined)
-            reactionList.extend(self.__generateReactions(reactants, products=products, forward=True, prod_resonance=prod_resonance))
+        # Forward direction (the direction in which kinetics is defined)
+        reactionList.extend(
+            self.__generateReactions(reactants, products=products, forward=True, prod_resonance=prod_resonance))
 
-            if not self.ownReverse and self.reversible:
-                # Reverse direction (the direction in which kinetics is not defined)
-                reactionList.extend(self.__generateReactions(reactants, products=products, forward=False, prod_resonance=prod_resonance))
+        if not self.ownReverse and self.reversible:
+            # Reverse direction (the direction in which kinetics is not defined)
+            reactionList.extend(
+                self.__generateReactions(reactants, products=products, forward=False, prod_resonance=prod_resonance))
 
         return reactionList
 
