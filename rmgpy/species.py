@@ -236,10 +236,9 @@ class Species(object):
         """
         for species in species_list:
             if isinstance(species, Species):
-                if self.isIsomorphic(species):
-                    return True
+                return self.isIsomorphic(species)
             else:
-                raise ValueError('Unexpected value "{0!r}" for species_list parameter;'
+                raise TypeError('Unexpected value "{0!r}" for species_list parameter;'
                                  ' should be a List of Species objects.'.format(species))
         return False
     
