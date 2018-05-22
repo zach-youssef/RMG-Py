@@ -188,7 +188,7 @@ cdef class ReactionSystem(DASx):
 
     cpdef initializeModel(self, list coreSpecies, list coreReactions, list edgeSpecies, list edgeReactions, list surfaceSpecies=None,
                           list surfaceReactions=None, list pdepNetworks=None, atol=1e-16, rtol=1e-8, sensitivity=False, 
-                          sens_atol=1e-6, sens_rtol=1e-4, filterReactions=False):
+                          sens_atol=1e-6, sens_rtol=1e-4, filterReactions=False, dict conditions=None):
         """
         Initialize a simulation of the reaction system using the provided
         kinetic model. You will probably want to create your own version of this
@@ -200,7 +200,21 @@ cdef class ReactionSystem(DASx):
         if surfaceReactions is None:
             surfaceReactions = []
             
-
+        if conditions:
+            isConc = hasattr(self,'initialConcentrations')
+            keys = conditions.keys()
+            if 'T' in keys and hasattr(self,'T'):
+                self.T = Quantity(conditions['T'],'K')
+            if 'P' in keys and hasattr(self,'P'):
+                self.P = Quantity(conditions['P'],'Pa')
+            for k in keys:
+                if isConc:
+                    if k in self.initialConcentrations.keys():
+                        self.initialConcentrations[k] = conditions[k] #already in SI units
+                else:
+                    if k in self.initialMoleFractions.keys():
+                        self.initialMoleFractions[k] = conditions[k]              
+                    
         self.numCoreSpecies = len(coreSpecies)
         self.numCoreReactions = len(coreReactions)
         self.numEdgeSpecies = len(edgeSpecies)
@@ -520,7 +534,7 @@ cdef class ReactionSystem(DASx):
     cpdef simulate(self, list coreSpecies, list coreReactions, list edgeSpecies, 
         list edgeReactions,list surfaceSpecies, list surfaceReactions,
         list pdepNetworks=None, bool prune=False, bool sensitivity=False, list sensWorksheet=None, object modelSettings=None,
-        object simulatorSettings=None):
+        object simulatorSettings=None, dict conditions=None):
         """
         Simulate the reaction system with the provided reaction model,
         consisting of lists of core species, core reactions, edge species, and
@@ -549,13 +563,13 @@ cdef class ReactionSystem(DASx):
         cdef bint terminated
         cdef object maxSpecies, maxNetwork
         cdef int i, j, k
-        cdef numpy.float64_t maxSurfaceDifLnAccumNum, maxSurfaceSpeciesRate 
+        cdef numpy.float64_t maxSurfaceDifLnAccumNum, maxSurfaceSpeciesRate, conversion
         cdef int maxSurfaceAccumReactionIndex, maxSurfaceSpeciesIndex
         cdef object maxSurfaceAccumReaction, maxSurfaceSpecies
         cdef numpy.ndarray[numpy.float64_t,ndim=1] surfaceSpeciesProduction, surfaceSpeciesConsumption
         cdef numpy.ndarray[numpy.float64_t,ndim=1] surfaceTotalDivAccumNums, surfaceSpeciesRateRatios
         cdef numpy.ndarray[numpy.float64_t, ndim=1] forwardRateCoefficients, coreSpeciesConcentrations
-        cdef double  prevTime, totalMoles, c, volume, RTP, unimolecularThresholdVal, bimolecularThresholdVal
+        cdef double  prevTime, totalMoles, c, volume, RTP, unimolecularThresholdVal, bimolecularThresholdVal, maxCharRate
         cdef bool useDynamicsTemp, firstTime, useDynamics, terminateAtMaxObjects, schanged
         cdef numpy.ndarray[numpy.float64_t, ndim=1] edgeReactionRates
         cdef double reactionRate, production, consumption
@@ -609,7 +623,7 @@ cdef class ReactionSystem(DASx):
         
         self.initializeModel(coreSpecies, coreReactions, edgeSpecies, edgeReactions, surfaceSpecies, surfaceReactions, 
                              pdepNetworks, absoluteTolerance, relativeTolerance, sensitivity, sensitivityAbsoluteTolerance, 
-                             sensitivityRelativeTolerance, filterReactions)
+                             sensitivityRelativeTolerance, filterReactions,conditions)
         
         prunableSpeciesIndices = self.prunableSpeciesIndices
         prunableNetworkIndices = self.prunableNetworkIndices
@@ -630,7 +644,9 @@ cdef class ReactionSystem(DASx):
         maxNetwork = None
         maxNetworkRate = 0.0
         iteration = 0
-
+        conversion = 0.0
+        maxCharRate = 0.0
+        
         maxEdgeSpeciesRateRatios = self.maxEdgeSpeciesRateRatios
         maxNetworkLeakRateRatios = self.maxNetworkLeakRateRatios
         forwardRateCoefficients = self.kf
@@ -667,6 +683,12 @@ cdef class ReactionSystem(DASx):
                     
                     logging.info('Resurrecting Model...')
                     
+                    conversion = 0.0
+                    for term in self.termination:
+                        if isinstance(term, TerminationConversion):
+                            index = speciesIndex[term.species]
+                            conversion = 1-(y_coreSpecies[index] / y0[index])
+
                     if invalidObjects == []:
                         #species flux criterion
                         if len(edgeSpeciesRateRatios) > 0:
@@ -688,7 +710,7 @@ cdef class ReactionSystem(DASx):
                             invalidObjects.append(obj)
                     
                     if invalidObjects != []:
-                        return False,True,invalidObjects,surfaceSpecies,surfaceReactions
+                        return False,True,invalidObjects,surfaceSpecies,surfaceReactions,self.t,conversion
                     else:
                         logging.error('Model Resurrection has failed')
                         logging.error("Core species names: {!r}".format([getSpeciesIdentifier(s) for s in coreSpecies]))
@@ -728,6 +750,9 @@ cdef class ReactionSystem(DASx):
             # Get the characteristic flux
             charRate = sqrt(numpy.sum(self.coreSpeciesRates * self.coreSpeciesRates))
             
+            if charRate > maxCharRate:
+                maxCharRate = charRate
+                
             coreSpeciesRates = numpy.abs(self.coreSpeciesRates)
             edgeReactionRates = self.edgeReactionRates
             coreSpeciesConsumptionRates = self.coreSpeciesConsumptionRates
@@ -1023,7 +1048,7 @@ cdef class ReactionSystem(DASx):
             if interrupt: #breaks while loop terminating iterations
                 logging.info('terminating simulation due to interrupt...')
                 break
-
+            
             # Finish simulation if any of the termination criteria are satisfied
             for term in self.termination:
                 if isinstance(term, TerminationTime):
@@ -1034,12 +1059,18 @@ cdef class ReactionSystem(DASx):
                         break
                 elif isinstance(term, TerminationConversion):
                     index = speciesIndex[term.species]
+                    conversion = 1-(y_coreSpecies[index] / y0[index])
                     if 1 - (y_coreSpecies[index] / y0[index]) > term.conversion:
                         terminated = True
                         logging.info('At time {0:10.4e} s, reached target termination conversion: {1:f} of {2}'.format(self.t,term.conversion,term.species))
                         self.logConversions(speciesIndex, y0)
                         break
-
+                elif isinstance(term, TerminationRateRatio):
+                    if maxCharRate != 0.0 and charRate/maxCharRate < term.ratio:
+                        terminated = True
+                        logging.info('At time {0:10.4e} s, reached target termination RateRatio: {1}'.format(self.t,charRate/maxCharRate))
+                        self.logConversions(speciesIndex, y0)
+                        
             # Increment destination step time if necessary
             if self.t >= 0.9999 * stepTime:
                 stepTime *= 10.0
@@ -1079,7 +1110,7 @@ cdef class ReactionSystem(DASx):
 
         # Return the invalid object (if the simulation was invalid) or None
         # (if the simulation was valid)
-        return terminated, False, invalidObjects, surfaceSpecies, surfaceReactions
+        return terminated, False, invalidObjects, surfaceSpecies, surfaceReactions, self.t, conversion
 
     cpdef logRates(self, double charRate, object species, double speciesRate, double maxDifLnAccumNum, object network, double networkRate):
         """
@@ -1214,3 +1245,15 @@ class TerminationConversion:
     def __init__(self, spec=None, conv=0.0):
         self.species = spec
         self.conversion = conv
+        
+class TerminationRateRatio:
+    """
+    Represent a fraction of the maximum characteristic rate of the simulation
+    at which the simulation should be terminated.  This class has one attribute
+    the ratio between the current and maximum characteristic rates at which
+    to terminate
+    """
+    
+    def __init__(self, ratio=0.01):
+        self.ratio = ratio
+        
