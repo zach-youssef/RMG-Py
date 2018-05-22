@@ -36,7 +36,7 @@ from rmgpy.exceptions import VF2Error
 
 ################################################################################
 
-cdef class VF2:
+cdef class VF2(object):
     """
     An implementation of the second version of the Vento-Foggia (VF2) algorithm
     for graph and subgraph isomorphism.
