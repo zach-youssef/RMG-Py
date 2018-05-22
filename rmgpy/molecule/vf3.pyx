@@ -119,7 +119,7 @@ cdef class VF3(VF2):
                 prob = 0
             return prob
 
-        exploration_sequence = sorted(graph2.vertices, key=sort_label)
+        exploration_sequence = sorted(filter(lambda vertex2: not vertex2.ignore, graph2.vertices), key=sort_label)
 
         #Using the exploration sequence, pre-process the feasibility sets and the terminal sets for each class
         level = 0
@@ -193,7 +193,6 @@ cdef class VF3(VF2):
             self.isMatch = True
             return True
 
-        #TODO: figure out how vertex.ignore fits in
         #Next candidate node from graph2 is predetermined
         vertex2 = self.exploration_sequence[len(self.graph2.vertices) - callDepth]
 
@@ -204,6 +203,8 @@ cdef class VF3(VF2):
 
         #Search candidate pairs in graph1
         for vertex1 in candidates:
+            if vertex1.ignore:
+                continue
             #If terminal nodes are available we only search those
             if vertex2.terminal and not vertex1.terminal:
                 continue

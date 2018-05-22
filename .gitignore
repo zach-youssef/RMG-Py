@@ -39,6 +39,10 @@ nbproject/*
 .pydevproject
 .settings/*
 
+# PyCharm project files
+.idea/*
+.cache/*
+
 # Unit test files
 .coverage
 testing/*
