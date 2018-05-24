@@ -53,14 +53,13 @@ cdef class VF3(VF2):
     It also uses an improved method to select candidate nodes from the second graph.
     """
 
-
-    cpdef preprocess(self, Graph graph1, Graph graph2, dict init_map, bint subgraph):
+    cdef preprocess(self, Graph graph1, Graph graph2, dict init_map, bint subgraph):
         """
         Sorts the vertices of the smaller graph into the order they will be searched in,
         then uses this ordering to pre-determine the core and feasibility sets for each level
         of the state-search.
         """
-
+        cdef Vertex vertex1, vertex2, neighbor
         cdef dict labelCounts, degreeCounts
         cdef int graph1_size
 
@@ -74,7 +73,7 @@ cdef class VF3(VF2):
 
         cdef int level
 
-        cdef dict feasibility_table  #map from label to map from vertex to level the node enters the terminal set
+        cdef list terminal_levels  #at each call depth, the list of nodes that enter the terminal set
         cdef list core_ordering  #the order the nodes from graph2 will enter the mapping
 
         cdef dict parent_map  # Map from each node to its parent
@@ -82,13 +81,12 @@ cdef class VF3(VF2):
         graph1_size = len(graph1.vertices)
 
         # Count the number of times each label and degree appears in the larger graph
-        #TODO: Check if label access is good or not
         for vertex1 in graph1.vertices:
-            labelCounts[getattr(vertex1, 'label', "")] = labelCounts.get(vertex1.sortingLabel, 0) + 1
-            degreeCounts[len(vertex1.edges)] = degreeCounts.get(len(vertex1.edges), 0) + 1
+            labelCounts[getattr(vertex1, 'label', "")] += 1
+            degreeCounts[len(vertex1.edges)] += 1
 
         # Find the probability of a node with a compatible label and degree
-        # appearing in the graph 1 for each node in graph 2
+        # appearing in graph1 for each node in graph2
         if subgraph:
             # Find the maximum degree so we know what degrees we need to consider
             # when calculating probabilities on the vertices of the subgraph
@@ -112,43 +110,27 @@ cdef class VF3(VF2):
 
         #Create a sorted list of graph2's vertices from low -> high probability
         #Nodes within the initial mapping are moved to the front of the sequence
-
         cdef sort_label(Vertex vertex2):
-            prob = p_feasible[vertex2]
             if init_map is not None and vertex2 in init_map.values():
-                prob = 0
-            return prob
+                return 0
+            else:
+                return p_feasible[vertex2]
 
-        exploration_sequence = sorted(filter(lambda vertex2: not vertex2.ignore, graph2.vertices), key=sort_label)
+        exploration_sequence = sorted(graph2.vertices, key=sort_label)
 
-        #Using the exploration sequence, pre-process the feasibility sets and the terminal sets for each class
+        #Using the exploration sequence, pre-process the terminal sets of graph2 for each level of the matching
         level = 0
 
         for vertex2 in exploration_sequence:
-            for neighbor in vertex2.edges.keys():
-                #Add node to core set
-                core_ordering.append(neighbor)
-
-                cdef str label
-                label = getattr(neighbor, 'label', '')
-
-                if not feasibility_table.get(label, False):
-                    feasibility_table[label] = {neighbor: -1}
-
-                cdef dict labeled_set
-                labeled_set = feasibility_table[label]
-
-                if labeled_set.get(neighbor, -1) < 0:
-                    labeled_set[neighbor] = level
-                    parent_map[neighbor] = vertex2
-
-                i = i + 1
+            terminal_levels.append([])
+            for neighbor in vertex2.edges:
+                terminal_levels[level].append(neighbor)
+            level += 1
 
         #Store the results of the pre-processing
         self.parents = parent_map
-        self.core_order = core_ordering
         self.exploration_sequence = exploration_sequence
-        self.feasibles = feasibility_table
+        self.terminal_levels = terminal_levels
 
         return
 
@@ -161,11 +143,14 @@ cdef class VF3(VF2):
         the first is found.
         """
 
+        #Peform pre-processing
         self.preprocess(self, graph1, graph2, initialMapping, subgraph)
 
+        #The rest of the setup before calling match is the same
+        #super.isomorphism will then call VF3's new match function
         super(VF3, self).isomorphism(self, graph1, graph2, initialMapping, subgraph, findAll)
 
-    cpdef bint match(self, int callDepth) except -2:
+    cdef bint match(self, int callDepth) except -2:
         """
         Recursively search for pairs of vertices to match, until all vertices
         are matched or the viable set of matches is exhausted. The `callDepth`
@@ -174,6 +159,8 @@ cdef class VF3(VF2):
 
         cdef dict mapping
         cdef list candidates
+        cdef bint has_terminal
+        cdef Vertex vertex1, vertex2
 
         # The call depth should never be negative!
         if callDepth < 0:
@@ -193,20 +180,28 @@ cdef class VF3(VF2):
             self.isMatch = True
             return True
 
+        #Update terminal status of graph2 vertices
+        for vertex2 in self.terminal_levels[len(self.graph2.vertices) - callDepth]:
+            vertex2.terminal = True
+
         #Next candidate node from graph2 is predetermined
         vertex2 = self.exploration_sequence[len(self.graph2.vertices) - callDepth]
 
-        #Graph1 candidates are the neighbors of the node mapped to the parent of vertex2,
-        #or just the terminal vertices of the same class otherwise
+        #Graph1 candidates for the pairing are the neighbors of the node mapped to the 'parent'
+        # of vertex2,if possible
         candidates = self.parents[vertex2].mapping.edges if self.parents.get(vertex2, False) \
             else self.graph1.vertices
 
+        #Store whether vertex2 is terminal so we don't have to re-calculate when we backtrack
+        has_terminal = vertex2.terminal
+
         #Search candidate pairs in graph1
         for vertex1 in candidates:
-            if vertex1.ignore:
+            #Ignore if marked as ignore, or if already in mapping
+            if vertex1.ignore or vertex1.mapping is not None:
                 continue
             #If terminal nodes are available we only search those
-            if vertex2.terminal and not vertex1.terminal:
+            if has_terminal and not vertex1.terminal:
                 continue
             #Matching nodes will have the same label
             if getattr(vertex2, 'label', '') is not getattr(vertex1, 'label', ''):
@@ -224,3 +219,67 @@ cdef class VF3(VF2):
 
         # If none of the matches lead to a complete isomorphism, return false
         return False
+
+    cdef addToMapping(self, Vertex vertex1, Vertex vertex2):
+        """
+        Adds valid mapping from vertex1 to vertex2, but only updates adds terminal status
+        for vertices in graph1 
+        
+        (graph2 terminal status at each level is determined in pre-processing and applied in match)
+        """
+
+        cdef Vertex v
+
+        #Map the vertices to one another
+        # Map the vertices to one another
+        vertex1.mapping = vertex2
+        vertex2.mapping = vertex1
+
+        # Remove these vertices from the set of terminals
+        vertex1.terminal = False
+        vertex2.terminal = False
+
+        #Add unmapped neighbors of vertex1 to the terminal set
+        for v in vertex1.edges:
+            v.terminal = v.mapping is None
+
+    cdef removeFromMapping(self, Vertex vertex1, Vertex vertex2):
+        """
+        Removes a mapping between vertex2, and updates terminal status of graph1 accordingly.
+        
+        (graph2 terminal status is still handled by the preprocessed data)
+        """
+
+        cdef Vertex v, v2
+
+        #Unmap the vertices
+        vertex1.mapping = None
+        vertex2.mapping = None
+
+        # Recompute the terminal status of any neighboring atoms
+        for v in vertex1.edges:
+            if v.mapping is not None: continue
+            for v2 in v.edges:
+                if v2.mapping is not None:
+                    v.terminal = True
+                    break
+            else:
+                v.terminal = False
+
+        # Restore terminal status
+        for v in vertex1.edges:
+            if v.mapping is not None:
+                vertex1.terminal = True
+                break
+            else:
+                vertex1.terminal = False
+
+        # Recompute the terminal status of any neighboring atoms
+        for v in vertex1.edges:
+            if v.mapping is not None: continue
+            for v2 in v.edges:
+                if v2.mapping is not None:
+                    v.terminal = True
+                    break
+            else:
+                v.terminal = False
