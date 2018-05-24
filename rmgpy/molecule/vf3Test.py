@@ -32,6 +32,7 @@ import unittest
 
 from rmgpy.molecule.vf2Test import TestVF2
 from rmgpy.molecule.vf3 import VF3
+from rmgpy.molecule.molecule import Molecule
 ###############################################################################
 
 class TestVF3(TestVF2):
@@ -43,6 +44,16 @@ class TestVF3(TestVF2):
     def setUp(self):
         super(TestVF3, self).setUp()
         self.vf2 = VF3()
+        self.vf3 = VF3()
+
+    def testGraphIsomorphism(self):
+        self.assertTrue(self.vf3.isIsomorphic(self.mol, self.mol2, None))
+
+    def testSubgraphIsomorphism(self):
+        mol3 = Molecule().fromSmiles("CC(=O)C")
+
+        self.assertTrue(self.vf3.isSubgraphIsomorphic(self.mol, mol3, None))
+
 ###############################################################################
 
 if __name__ == '__main__':
