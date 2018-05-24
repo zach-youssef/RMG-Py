@@ -40,6 +40,10 @@ cdef class VF3:
     cdef bint isMatch
     cdef list mappingList
 
+    cdef dict parent_map
+    cdef list exploration_sequence
+    cdef list terminal_levels
+
     cpdef bint isIsomorphic(self, Graph graph1, Graph graph2, dict initialMapping) except -2
 
     cpdef list findIsomorphism(self, Graph graph1, Graph graph2, dict initialMapping)
@@ -47,6 +51,8 @@ cdef class VF3:
     cpdef bint isSubgraphIsomorphic(self, Graph graph1, Graph graph2, dict initialMapping) except -2
 
     cpdef list findSubgraphIsomorphisms(self, Graph graph1, Graph graph2, dict initialMapping)
+
+    cdef preprocess(self, Graph graph1, Graph graph2, dict init_map, bint subgraph)
 
     cdef isomorphism(self, Graph graph1, Graph graph2, dict initialMapping, bint subgraph, bint findAll)
 
