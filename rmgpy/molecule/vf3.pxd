@@ -25,7 +25,9 @@
 #                                                                             #
 ###############################################################################
 
+cimport cython
 from graph cimport Vertex, Edge, Graph
+from rmgpy.molecule.vf2 import VF2
 
 cdef class VF3:
 
@@ -52,7 +54,7 @@ cdef class VF3:
 
     cpdef list findSubgraphIsomorphisms(self, Graph graph1, Graph graph2, dict initialMapping)
 
-    cdef preprocess(self, Graph graph1, Graph graph2, dict init_map, bint subgraph)
+    cpdef preprocess(self, Graph graph1, Graph graph2, dict init_map, bint subgraph)
 
     cdef isomorphism(self, Graph graph1, Graph graph2, dict initialMapping, bint subgraph, bint findAll)
 

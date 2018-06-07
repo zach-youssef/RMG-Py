@@ -38,7 +38,7 @@ from rmgpy.molecule.vf2 import VF2
 
 ################################################################################
 
-cdef class VF3(VF2):
+cdef class VF3:
     """
     An implementation of the third version of Vento-Foggia (VF3) algorithm
     for graph and subgraph isomorphism
@@ -52,31 +52,256 @@ cdef class VF3(VF2):
 
     It also uses an improved method to select candidate nodes from the second graph.
     """
+    ################################################################################
 
-    cdef preprocess(self, Graph graph1, Graph graph2, dict init_map, bint subgraph):
+    def __init__(self, graphA = None, graphB = None):
+        self.graph1 = graphA
+        self.graph2 = graphB
+
+    @property
+    def graphA(self):
+        return self.graph1
+
+    @graphA.setter
+    def graphA(self, value):
+        self.graph1 = value
+        self.graph1.sortVertices()
+
+    @property
+    def graphB(self):
+        return self.graph2
+
+    @graphB.setter
+    def graphB(self, value):
+        self.graph2 = value
+        self.graph2.sortVertices()
+
+    cpdef bint isIsomorphic(self, Graph graph1, Graph graph2, dict initialMapping) except -2:
+        """
+        Return ``True`` if graph `graph1` is isomorphic to graph `graph2` with
+        the optional initial mapping `initialMapping`, or ``False`` otherwise.
+        """
+        self.isomorphism(graph1, graph2, initialMapping, False, False)
+        return self.isMatch
+
+    cpdef list findIsomorphism(self, Graph graph1, Graph graph2, dict initialMapping):
+        """
+        Return a list of dicts of all valid isomorphism mappings from graph
+        `graph1` to graph `graph2` with the optional initial mapping 
+        `initialMapping`. If no valid isomorphisms are found, an empty list is
+        returned.
+        """
+        self.isomorphism(graph1, graph2, initialMapping, False, True)
+        return self.mappingList
+
+    cpdef bint isSubgraphIsomorphic(self, Graph graph1, Graph graph2, dict initialMapping) except -2:
+        """
+        Return ``True`` if graph `graph1` is subgraph isomorphic to subgraph
+        `graph2` with the optional initial mapping `initialMapping`, or
+        ``False`` otherwise.
+        """
+        self.isomorphism(graph1, graph2, initialMapping, True, False)
+        return self.isMatch
+
+    cpdef list findSubgraphIsomorphisms(self, Graph graph1, Graph graph2, dict initialMapping):
+        """
+        Return a list of dicts of all valid subgraph isomorphism mappings from
+        graph `graph1` to subgraph `graph2` with the optional initial mapping 
+        `initialMapping`. If no valid subgraph isomorphisms are found, an empty
+        list is returned.
+        """
+        self.isomorphism(graph1, graph2, initialMapping, True, True)
+        return self.mappingList
+
+    cdef isomorphism(self, Graph graph1, Graph graph2, dict initialMapping, bint subgraph, bint findAll):
+        """
+        Evaluate the isomorphism relationship between graphs `graph1` and
+        `graph2` with optional initial mapping `initialMapping`. If `subgraph`
+        is ``True``, `graph2` is treated as a possible subgraph of `graph1`.
+        If `findAll` is ``True``, all isomorphisms are found; otherwise only
+        the first is found.
+        """
+        cdef int callDepth, index1, index2
+
+        if self.graph1 is not graph1:
+            self.graph1 = graph1
+            graph1.sortVertices()
+
+        if self.graph2 is not graph2:
+            self.graph2 = graph2
+            graph2.sortVertices()
+
+        #Peform pre-processing
+        self.preprocess(graph1, graph2, initialMapping, subgraph)
+
+        self.initialMapping = initialMapping
+        self.subgraph = subgraph
+        self.findAll = findAll
+
+        # Clear previous result
+        self.isMatch = False
+        self.mappingList = []
+
+        # Some quick isomorphism checks based on graph sizes
+        if not self.subgraph and len(graph2.vertices) != len(graph1.vertices):
+            # The two graphs don't have the same number of vertices, so they
+            # cannot be isomorphic
+            return
+        elif not self.subgraph and len(graph2.vertices) == len(graph1.vertices) == 0:
+            # The two graphs don't have any vertices; this means they are
+            # trivially isomorphic
+            self.isMatch = True
+            return
+        elif self.subgraph and len(graph2.vertices) > len(graph1.vertices):
+            # The second graph has more vertices than the first, so it cannot be
+            # a subgraph of the first
+            return
+
+        # Initialize callDepth with the size of the smallest graph
+        # Each recursive call to match() will decrease it by one;
+        # when the whole graph has been explored, it should reach 0
+        # It should never go below zero!
+        callDepth = len(graph2.vertices)
+
+        # Initialize mapping by clearing any previous mapping information
+        for vertex1 in graph1.vertices:
+            vertex1.mapping = None
+            vertex1.terminal = False
+        for vertex2 in graph2.vertices:
+            vertex2.mapping = None
+            vertex2.terminal = False
+        # Set the initial mapping if provided
+        if self.initialMapping is not None:
+            for vertex1, vertex2 in self.initialMapping.items():
+                self.addToMapping(vertex1, vertex2)
+            callDepth -= len(self.initialMapping)
+
+        self.match(callDepth)
+
+    cpdef bint feasible(self, Vertex vertex1, Vertex vertex2) except -2:
+        """
+        Return ``True`` if vertex `vertex1` from the first graph is a feasible
+        match for vertex `vertex2` from the second graph, or ``False`` if not.
+        The semantic and structural relationship of the vertices is evaluated,
+        including several structural "look-aheads" that cheaply eliminate many
+        otherwise feasible pairs.
+        """
+        cdef Vertex vert1, vert2
+        cdef Edge edge1, edge2
+        cdef int term1Count, term2Count, neither1Count, neither2Count
+
+        if not self.subgraph:
+            # To be feasible the connectivity values must be an exact match
+            if vertex1.connectivity1 != vertex2.connectivity1: return False
+            if vertex1.connectivity2 != vertex2.connectivity2: return False
+            if vertex1.connectivity3 != vertex2.connectivity3: return False
+
+        # Semantic check #1: vertex1 and vertex2 must be equivalent
+        if self.subgraph:
+            if not vertex1.isSpecificCaseOf(vertex2): return False
+        else:
+            if not vertex1.equivalent(vertex2): return False
+
+        # Semantic check #2: adjacent vertices to vertex1 and vertex2 that are
+        # already mapped should be connected by equivalent edges
+        for vert2 in vertex2.edges:
+            if vert2.mapping is not None:
+                vert1 = vert2.mapping
+                if vert1 not in vertex1.edges:
+                    # The vertices are joined in graph2, but not in graph1
+                    return False
+                edge1 = vertex1.edges[vert1]
+                edge2 = vertex2.edges[vert2]
+                if self.subgraph:
+                    if not edge1.isSpecificCaseOf(edge2): return False
+                else:
+                    if not edge1.equivalent(edge2): return False
+
+        # There could still be edges in graph1 that aren't in graph2; this is okay
+        # for subgraph matching, but not for exact matching
+        if not self.subgraph:
+            for vert1 in vertex1.edges:
+                if vert1.mapping is not None:
+                    if vert1.mapping not in vertex2.edges:
+                        # The vertices are joined in graph1, but not in graph2
+                        return False
+
+        # Count number of terminals adjacent to vertex1 and vertex2
+        term1Count = 0;
+        term2Count = 0;
+        neither1Count = 0;
+        neither2Count = 0
+        for vert1 in vertex1.edges:
+            if vert1.terminal:
+                term1Count += 1
+            elif vert1.mapping is not None:
+                neither1Count += 1
+        for vert2 in vertex2.edges:
+            if vert2.terminal:
+                term2Count += 1
+            elif vert2.mapping is not None:
+                neither2Count += 1
+
+        # Level 2 look-ahead: the number of adjacent vertices of vertex1 and
+        # vertex2 that are non-terminals must be equal
+        if self.subgraph:
+            if neither1Count < neither2Count: return False
+        else:
+            if neither1Count != neither2Count: return False
+
+        # Level 1 look-ahead: the number of adjacent vertices of vertex1 and
+        # vertex2 that are terminals must be equal
+        if self.subgraph:
+            if term1Count < term2Count: return False
+        else:
+            if term1Count != term2Count: return False
+
+        # Level 0 look-ahead: all adjacent vertices of vertex2 already in the
+        # mapping must map to adjacent vertices of vertex1
+        for vert2 in vertex2.edges:
+            if vert2.mapping is not None:
+                if vert2.mapping not in vertex1.edges: return False
+        # Also, all adjacent vertices of vertex1 already in the mapping must map to
+        # adjacent vertices of vertex2, unless we are subgraph matching
+        if not self.subgraph:
+            for vert1 in vertex1.edges:
+                if vert1.mapping is not None:
+                    if vert1.mapping not in vertex2.edges: return False
+
+        # All of our tests have been passed, so the two vertices are a feasible pair
+        return True
+
+    ################################################################################
+
+    def sort_label(dict p_feasible, dict init_map):
+        return lambda vertex2: 0 if init_map is not None and vertex2 in init_map.values() else p_feasible
+
+    cpdef preprocess(self, Graph graph1, Graph graph2, dict init_map, bint subgraph):
         """
         Sorts the vertices of the smaller graph into the order they will be searched in,
         then uses this ordering to pre-determine the core and feasibility sets for each level
         of the state-search.
         """
         cdef Vertex vertex1, vertex2, neighbor
-        cdef dict labelCounts, degreeCounts
+        cdef dict labelCounts = {}
+        cdef dict degreeCounts = {}
+
         cdef int graph1_size
 
         cdef int degree, max_degree
 
         cdef float p_label, p_degree, prob
 
-        cdef dict p_feasible
+        cdef dict p_feasible = {}
 
         cdef list exploration_sequence
 
         cdef int level
 
-        cdef list terminal_levels  #at each call depth, the list of nodes that enter the terminal set
-        cdef list core_ordering  #the order the nodes from graph2 will enter the mapping
+        cdef list terminal_levels = []  #at each call depth, the list of nodes that enter the terminal set
+        cdef list core_ordering = []  #the order the nodes from graph2 will enter the mapping
 
-        cdef dict parent_map  # Map from each node to its parent
+        cdef dict parent_map = {}  # Map from each node to its parent
 
         graph1_size = len(graph1.vertices)
 
@@ -110,13 +335,7 @@ cdef class VF3(VF2):
 
         #Create a sorted list of graph2's vertices from low -> high probability
         #Nodes within the initial mapping are moved to the front of the sequence
-        cdef sort_label(Vertex vertex2):
-            if init_map is not None and vertex2 in init_map.values():
-                return 0
-            else:
-                return p_feasible[vertex2]
-
-        exploration_sequence = sorted(graph2.vertices, key=sort_label)
+        exploration_sequence = sorted(graph2.vertices, key=self.sort_label(p_feasible, init_map))
 
         #Using the exploration sequence, pre-process the terminal sets of graph2 for each level of the matching
         level = 0
@@ -134,6 +353,7 @@ cdef class VF3(VF2):
 
         return
 
+    '''
     cdef isomorphism(self, Graph graph1, Graph graph2, dict initialMapping, bint subgraph, bint findAll):
         """
         Evaluate the isomorphism relationship between graphs `graph1` and
@@ -144,11 +364,12 @@ cdef class VF3(VF2):
         """
 
         #Peform pre-processing
-        self.preprocess(self, graph1, graph2, initialMapping, subgraph)
+        self.preprocess(graph1, graph2, initialMapping, subgraph)
 
         #The rest of the setup before calling match is the same
         #super.isomorphism will then call VF3's new match function
         super(VF3, self).isomorphism(self, graph1, graph2, initialMapping, subgraph, findAll)
+    '''
 
     cdef bint match(self, int callDepth) except -2:
         """
