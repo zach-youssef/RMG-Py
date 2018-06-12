@@ -42,7 +42,7 @@ cdef class VF3:
     cdef bint isMatch
     cdef list mappingList
 
-    cdef dict parent_map
+    cdef dict parents
     cdef list exploration_sequence
     cdef list terminal_levels
 

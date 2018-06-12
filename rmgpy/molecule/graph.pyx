@@ -86,6 +86,9 @@ cdef class Vertex(object):
         self.terminal = d['terminal']
         self.mapping = d['mapping']
 
+    @property
+    def symbol(self): return ''
+
     cpdef Vertex copy(self):
         """
         Return a copy of the vertex. The default implementation assumes that no

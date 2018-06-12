@@ -51,6 +51,9 @@ cdef class VF3:
     the core and feasibility sets of the first graph at each level of the search state.
 
     It also uses an improved method to select candidate nodes from the second graph.
+
+    Code within the first #### enclosed block is identical to VF2 code,
+    extending VF2 to reuse the code refused to compile
     """
     ################################################################################
 
@@ -273,18 +276,18 @@ cdef class VF3:
 
     ################################################################################
 
-    def sort_label(dict p_feasible, dict init_map):
+    def sort_label(self, dict p_feasible, dict init_map):
         return lambda vertex2: 0 if init_map is not None and vertex2 in init_map.values() else p_feasible
 
     cpdef preprocess(self, Graph graph1, Graph graph2, dict init_map, bint subgraph):
         """
         Sorts the vertices of the smaller graph into the order they will be searched in,
-        then uses this ordering to pre-determine the core and feasibility sets for each level
-        of the state-search.
+        then uses this ordering to pre-determine the terminal sets of the smaller graph.
         """
+
         cdef Vertex vertex1, vertex2, neighbor
-        cdef dict labelCounts = {}
-        cdef dict degreeCounts = {}
+        cdef dict label_counts = {}
+        cdef dict degree_counts = {}
 
         cdef int graph1_size
 
@@ -296,7 +299,7 @@ cdef class VF3:
 
         cdef list exploration_sequence
 
-        cdef int level
+        cdef int level, index
 
         cdef list terminal_levels = []  #at each call depth, the list of nodes that enter the terminal set
         cdef list core_ordering = []  #the order the nodes from graph2 will enter the mapping
@@ -307,8 +310,8 @@ cdef class VF3:
 
         # Count the number of times each label and degree appears in the larger graph
         for vertex1 in graph1.vertices:
-            labelCounts[getattr(vertex1, 'label', "")] += 1
-            degreeCounts[len(vertex1.edges)] += 1
+            label_counts[vertex1.symbol] = label_counts.get(vertex1.symbol, 0) + 1
+            degree_counts[len(vertex1.edges)] = degree_counts.get(len(vertex1.edges), 0) + 1
 
         # Find the probability of a node with a compatible label and degree
         # appearing in graph1 for each node in graph2
@@ -317,19 +320,19 @@ cdef class VF3:
             # when calculating probabilities on the vertices of the subgraph
             max_degree = 0
 
-            for degree in degreeCounts.keys():
+            for degree in degree_counts.keys():
                 if degree > max_degree:
                     max_degree = degree
 
         for vertex2 in graph2.vertices:
-            p_label = labelCounts.get(getattr(vertex2, 'label', ""), 0) / graph1_size
+            p_label = label_counts.get(vertex2.symbol, 0) / graph1_size
 
             if subgraph:
                 p_degree = 0
                 for degree in range(len(vertex2.edges), max_degree + 1):
-                    p_degree += degreeCounts.get(degree, 0) / graph1_size
+                    p_degree += degree_counts.get(degree, 0) / graph1_size
             else:
-                p_degree = degreeCounts.get(vertex2.label, 0) / graph1_size
+                p_degree = degree_counts.get(vertex2.label, 0) / graph1_size
 
             p_feasible[vertex2] = p_degree * p_label
 
@@ -339,11 +342,22 @@ cdef class VF3:
 
         #Using the exploration sequence, pre-process the terminal sets of graph2 for each level of the matching
         level = 0
-
         for vertex2 in exploration_sequence:
-            terminal_levels.append([])
+            #Initialize the level to the previous one
+            if level == 0:
+                terminal_levels.append([])
+            else:
+                terminal_levels.append(terminal_levels[level - 1])
+
+            #Add neighbors of the node to the terminal set
             for neighbor in vertex2.edges:
                 terminal_levels[level].append(neighbor)
+
+            #Remove nodes in the mapping from the terminal set
+            for index in range(level + 1):
+                if exploration_sequence[index] in terminal_levels[level]:
+                    terminal_levels[level].remove(exploration_sequence[index])
+
             level += 1
 
         #Store the results of the pre-processing
@@ -351,8 +365,12 @@ cdef class VF3:
         self.exploration_sequence = exploration_sequence
         self.terminal_levels = terminal_levels
 
+        print(exploration_sequence)
+        print(terminal_levels)
+
         return
 
+    #This was the isomorphism method assuming VF3 inherited VF2 for code reuse
     '''
     cdef isomorphism(self, Graph graph1, Graph graph2, dict initialMapping, bint subgraph, bint findAll):
         """
@@ -425,7 +443,7 @@ cdef class VF3:
             if has_terminal and not vertex1.terminal:
                 continue
             #Matching nodes will have the same label
-            if getattr(vertex2, 'label', '') is not getattr(vertex1, 'label', ''):
+            if vertex2.symbol is not vertex1.symbol:
                 continue
             #Propose pairing
             if self.feasible(vertex1, vertex2):
@@ -504,3 +522,20 @@ cdef class VF3:
                     break
             else:
                 v.terminal = False
+
+    def debugPrinter(self):
+        map = {}
+        unmap1 = []
+        unmap2 = []
+        for vertex1 in self.graph1.vertices:
+            if vertex1.mapping is not None:
+                map[vertex1] = vertex1.mapping
+            else:
+                unmap1.append(vertex1)
+        for vertex2 in self.graph2.vertices:
+            if vertex2.mapping is None:
+                unmap2.append(vertex2)
+
+        print(map)
+        print(unmap1)
+        print(unmap2)
