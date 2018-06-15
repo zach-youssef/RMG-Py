@@ -30,7 +30,6 @@ This module contains graph isomorphism functions implementing the
 VF3 algorithm of Vento and Foggia (University of Salerno, Italy)
 """
 
-from __future__ import division
 cimport cython
 from rmgpy.molecule.graph import Graph
 from rmgpy.exceptions import VF2Error
@@ -277,7 +276,7 @@ cdef class VF3:
     ################################################################################
 
     def sort_label(self, dict p_feasible, dict init_map):
-        return lambda vertex2: 0 if init_map is not None and vertex2 in init_map.values() else p_feasible
+        return lambda vertex2: 0 if init_map is not None and vertex2 in init_map.values() else p_feasible[vertex2]
 
     cpdef preprocess(self, Graph graph1, Graph graph2, dict init_map, bint subgraph):
         """
@@ -289,11 +288,11 @@ cdef class VF3:
         cdef dict label_counts = {}
         cdef dict degree_counts = {}
 
-        cdef int graph1_size
+        cdef float graph1_size
 
         cdef int degree, max_degree
 
-        cdef float p_label, p_degree, prob
+        cdef float p_label, p_degree
 
         cdef dict p_feasible = {}
 
@@ -301,12 +300,12 @@ cdef class VF3:
 
         cdef int level, index
 
-        cdef list terminal_levels = []  #at each call depth, the list of nodes that enter the terminal set
+        cdef list terminal_levels = [[]]  #at each call depth, the list of nodes that enter the terminal set
         cdef list core_ordering = []  #the order the nodes from graph2 will enter the mapping
 
         cdef dict parent_map = {}  # Map from each node to its parent
 
-        graph1_size = len(graph1.vertices)
+        graph1_size = float(len(graph1.vertices))
 
         # Count the number of times each label and degree appears in the larger graph
         for vertex1 in graph1.vertices:
@@ -325,36 +324,34 @@ cdef class VF3:
                     max_degree = degree
 
         for vertex2 in graph2.vertices:
-            p_label = label_counts.get(vertex2.symbol, 0) / graph1_size
+            p_label = float(float(label_counts.get(vertex2.symbol, 0.0)) / float(graph1_size))
 
             if subgraph:
-                p_degree = 0
+                p_degree = 0.0
                 for degree in range(len(vertex2.edges), max_degree + 1):
-                    p_degree += degree_counts.get(degree, 0) / graph1_size
+                    p_degree += float(float(degree_counts.get(degree, 0.0)) / float(graph1_size))
             else:
-                p_degree = degree_counts.get(vertex2.label, 0) / graph1_size
+                p_degree = float(float(degree_counts.get(len(vertex2.edges), 0.0)) / float(graph1_size))
 
-            p_feasible[vertex2] = p_degree * p_label
+            p_feasible[vertex2] = float(p_degree * p_label)
 
         #Create a sorted list of graph2's vertices from low -> high probability
         #Nodes within the initial mapping are moved to the front of the sequence
         exploration_sequence = sorted(graph2.vertices, key=self.sort_label(p_feasible, init_map))
 
         #Using the exploration sequence, pre-process the terminal sets of graph2 for each level of the matching
-        level = 0
+        level = 1
         for vertex2 in exploration_sequence:
-            #Initialize the level to the previous one
-            if level == 0:
-                terminal_levels.append([])
-            else:
-                terminal_levels.append(terminal_levels[level - 1])
+            #Initialize the level
+            terminal_levels.append([])
 
             #Add neighbors of the node to the terminal set
             for neighbor in vertex2.edges:
-                terminal_levels[level].append(neighbor)
+                if neighbor not in terminal_levels[level]:
+                    terminal_levels[level].append(neighbor)
 
             #Remove nodes in the mapping from the terminal set
-            for index in range(level + 1):
+            for index in range(level):
                 if exploration_sequence[index] in terminal_levels[level]:
                     terminal_levels[level].remove(exploration_sequence[index])
 
@@ -364,9 +361,6 @@ cdef class VF3:
         self.parents = parent_map
         self.exploration_sequence = exploration_sequence
         self.terminal_levels = terminal_levels
-
-        print(exploration_sequence)
-        print(terminal_levels)
 
         return
 
@@ -522,20 +516,3 @@ cdef class VF3:
                     break
             else:
                 v.terminal = False
-
-    def debugPrinter(self):
-        map = {}
-        unmap1 = []
-        unmap2 = []
-        for vertex1 in self.graph1.vertices:
-            if vertex1.mapping is not None:
-                map[vertex1] = vertex1.mapping
-            else:
-                unmap1.append(vertex1)
-        for vertex2 in self.graph2.vertices:
-            if vertex2.mapping is None:
-                unmap2.append(vertex2)
-
-        print(map)
-        print(unmap1)
-        print(unmap2)

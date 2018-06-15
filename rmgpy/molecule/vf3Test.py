@@ -49,10 +49,16 @@ class TestVF3(TestVF2):
     def testGraphIsomorphism(self):
         self.assertTrue(self.vf3.isIsomorphic(self.mol, self.mol2, None))
 
-    def testSubgraphIsomorphism(self):
-        mol3 = Molecule().fromSMILES("CC(=O)C")
+        examples = ["CC(C)=O", "C1=CC=CC=C1O[H]", "[S](=O)(=O)([O-])[O-]", "C1=CC=C2C(=C1)C=CC=C2"]
 
-        self.assertTrue(self.vf3.isSubgraphIsomorphic(self.mol, mol3, None))
+        for example in examples:
+            mol = Molecule().fromSMILES(example)
+            self.assertTrue(self.vf3.isIsomorphic(mol, mol.copy(True), None))
+
+
+
+    def testSubgraphIsomorphism(self):
+        pass#TODO
 
 
 ###############################################################################
