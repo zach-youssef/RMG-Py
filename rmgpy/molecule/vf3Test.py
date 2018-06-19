@@ -64,6 +64,7 @@ class TestVF3(TestVF2):
                     self.assertFalse(self.vf3.isSubgraphIsomorphic(mol, Molecule().fromSMILES(smiles2), None))
 
     def testSubgraphIsomorphism(self):
+        # Simple test comparing C-C to C-C-C (no hydrogens)
         mol = Molecule()
 
         c1 = Atom(getElement(6))
@@ -87,6 +88,33 @@ class TestVF3(TestVF2):
 
         self.assertTrue(self.vf3.isSubgraphIsomorphic(mol2, mol, None))
         self.assertFalse(self.vf3.isSubgraphIsomorphic(mol, mol2, None))
+
+        # Ring membership is a semantic property of molecules,
+        # so straight chains are not considered sub graphs of rings
+
+        hexane = Molecule().fromSMILES("C1CCCCC1")
+
+        self.assertFalse(self.vf3.isSubgraphIsomorphic(hexane, mol, None))
+        self.assertFalse(self.vf3.isSubgraphIsomorphic(hexane, mol2, None))
+
+        # Benzene and hexane, while technically sharing the same shape,
+        # differ in semantic information.
+        benzene = Molecule().fromSMILES("C1=CC=CC=C1")
+
+        self.assertFalse(self.vf3.isSubgraphIsomorphic(hexane, benzene, None))
+
+        # Test sub graph isomorphism on rings
+        hexaneMinusH = hexane.copy(True)
+        hexaneMinusH.removeVertex(hexaneMinusH.vertices[6])
+
+        self.assertTrue(self.vf3.isSubgraphIsomorphic(hexane, hexaneMinusH, None))
+        self.assertFalse(self.vf3.isSubgraphIsomorphic(hexaneMinusH, hexane, None))
+        
+        benzeneMinusH = benzene.copy(True)
+        benzeneMinusH.removeVertex(benzeneMinusH.vertices[6])
+
+        self.assertTrue(self.vf3.isSubgraphIsomorphic(benzene, benzeneMinusH, None))
+        self.assertFalse(self.vf3.isSubgraphIsomorphic(benzeneMinusH, hexane, None))
 
     def testNumberOfMappings(self):
         examples = {"CC": 72,
