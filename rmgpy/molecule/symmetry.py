@@ -344,9 +344,9 @@ def calculateCyclicSymmetryNumber(molecule):
     Get the symmetry number correction for cyclic regions of a molecule.
     For complicated fused rings the smallest set of smallest rings is used.
     """
-    from rmgpy.molecule.vf2 import VF2
+    from rmgpy.molecule.vf3 import VF3
     # setup isomorphism checker
-    vf2 = VF2(molecule, molecule)
+    vf3 = VF3(molecule, molecule)
     
     symmetryNumber = 1
     
@@ -370,7 +370,7 @@ def calculateCyclicSymmetryNumber(molecule):
                 starting_index = 0
                 while all_the_same and starting_index < size / 2: 
                     for atom_index in range(num_rotations,size,num_rotations):
-                        if not vf2.feasible(ring[starting_index],ring[(starting_index + atom_index) % size]):
+                        if not vf3.feasible(ring[starting_index],ring[(starting_index + atom_index) % size]):
                             all_the_same = False
                             break
                     starting_index += 1
@@ -393,7 +393,7 @@ def calculateCyclicSymmetryNumber(molecule):
             while min_index <= max_index:
                 # ensure the two atoms are different. use mod size to loop to the start
                 # of the list when index out of bounds
-                if not vf2.feasible(ring[min_index % size], ring[max_index % size]):
+                if not vf3.feasible(ring[min_index % size], ring[max_index % size]):
                     all_the_same = False
                     break
                 min_index += 1
@@ -407,7 +407,7 @@ def calculateCyclicSymmetryNumber(molecule):
                 while min_index < max_index:
                     # ensure the two atoms are different. use mod size to loop to the start
                     # of the list when index out of bounds
-                    if not vf2.feasible(ring[min_index % size], ring[max_index % size]):
+                    if not vf3.feasible(ring[min_index % size], ring[max_index % size]):
                         all_the_same = False
                         break
                     min_index += 1
